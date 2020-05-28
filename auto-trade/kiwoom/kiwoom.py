@@ -20,9 +20,11 @@ from util.logUtil import CommonLogger as log
 from kiwoom.SyncRequestDecorator import SyncRequestDecorator
 
 class Kiwoom(QAxWidget):
-    def __init__(self):
+    def __init__(self, db):
         print("kiwoom start")
         super().__init__()
+
+        self.db = db
 
         # 키움 시그널 연결
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
@@ -180,3 +182,30 @@ class Kiwoom(QAxWidget):
 
         if self.event is not None:
             self.event.exit()
+
+    def load_code_list(self):
+        ret = self.dynamicCall("GetCodeListByMarket(QString)", ["0"])
+        kospi_code_list = ret.split(';')
+        kospi_list = []
+        today = datetime.datetime.now().strftime("%Y%m%d")
+
+        for code in kospi_code_list:
+            time.sleep(0.1)
+            last_price = self.dynamicCall("GetMasterLastPrice(QString)", [code])
+            if last_price == '':
+                last_price = 0
+            else:
+                last_price = int(last_price)
+
+            kospi_list.append({
+                "code": code
+                , "date": today
+                , "name": self.dynamicCall("GetMasterCodeName(QString)", [code])
+                , "stock_count": int(self.dynamicCall("GetMasterListedStockCnt(QString)", [code]))
+                , "company_state": self.dynamicCall("GetMasterConstruction(QString)", [code])
+                , "listing_date": self.dynamicCall("GetMasterListedStockDate(QString)", [code])
+                , "last_price": last_price
+                , "stock_state": self.dynamicCall("GetMasterStockState(QString)", [code])
+            })
+
+        self.db.add('code', kospi_list)
