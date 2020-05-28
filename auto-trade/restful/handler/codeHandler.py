@@ -15,11 +15,29 @@ class CodeHandler(RequestHandler):
         """
             restore kospi code
         """
-        log.instance().logger().debug("restore kospi list")
+        log.instance().logger().debug("code handler")
 
+        code = self.get_argument('code', None)
+        result = None
+        if code is None:
+            result = self.reload_code()
+        else :
+            result = self.get_stock_info(code)
+
+        self.write(json.dumps(result))
+
+    def get_stock_info(self, code):
+        hts = self.hts
+
+        tr_code = hts.kiwoom_tr_stock_info(code)['res']
+        keys = hts.dict_callback.keys()
+        while tr_code not in keys:
+            time.sleep(self.SLEEP_TIME)
+
+        return hts.dict_callback.pop(tr_code, None)
+
+    def reload_code(self):
         hts = self.hts
         hts.deposit = None
-        result = hts.load_code_list()
+        return hts.load_code_list()
 
-        log.instance().logger().debug("restored")
-        self.write(json.dumps({'code': 'ok'}))

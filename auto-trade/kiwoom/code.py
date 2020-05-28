@@ -53,5 +53,8 @@ class KiwoomCode():
             }
         }
 
+    def in_code(self, code):
+        return code in self.code_info
+
     def get_code_info(self, code):
         return self.code_info[code]

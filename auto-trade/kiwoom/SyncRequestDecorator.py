@@ -13,9 +13,10 @@ class SyncRequestDecorator:
                 self.result = {}
             # self.request_thread_worker.request_queue.append((func, args, kwargs))
             log.instance().logger().debug("요청 실행: %s %s %s" % (func.__name__, args, kwargs))
-            func(self, *args, **kwargs)
+            res = func(self, *args, **kwargs)
             self.event = QEventLoop()
             self.event.exec_()
+            self.result['res'] = res
             return self.result  # 콜백 결과 반환
         return func_wrapper
 

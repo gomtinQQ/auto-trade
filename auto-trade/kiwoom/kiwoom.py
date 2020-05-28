@@ -136,7 +136,8 @@ class Kiwoom(QAxWidget):
 
     def set_input(self, data):
         for key, value in data.items():
-            self.kiwoom_CommConnect(key, value)
+            log.instance().logger().debug("K : {0} | V : {1}".format(key, value))
+            self.kiwoom_SetInputValue(key, value)
 
     def kiwoom_CommRqData(self, sRQName, sTrCode, nPrevNext, sScreenNo):
         """
@@ -188,20 +189,22 @@ class Kiwoom(QAxWidget):
             if "예수금상세현황요청" in self.dict_callback:
                 self.dict_callback["예수금상세현황요청"](self.deposit)
 
-        if sRQName in self.code.code_info:
+        if self.code.in_code(sRQName):
             data = {}
             code_info = self.code.get_code_info(sRQName)
-            for key, value in code_info.output.items():
-                if value["type"] == 'ui':
-                    data[key] = abs(int(self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr)))
-                elif value["type"] == 'i':
-                    data[key] = int(self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr))
-                elif value["type"] == 'f':
-                    data[key] = float(self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr))
-                elif value["type"] == 's':
-                    data[key] = self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr)
+            for key, value in code_info["output"].items():
+                kr = value["kr"]
+                type = value["type"]
+                if type == 'ui':
+                    data[key] = abs(int(self.kiwoom_GetCommData(sTRCode, sRQName, 0, kr)))
+                elif type == 'i':
+                    data[key] = int(self.kiwoom_GetCommData(sTRCode, sRQName, 0, kr))
+                elif type == 'f':
+                    data[key] = float(self.kiwoom_GetCommData(sTRCode, sRQName, 0, kr))
+                elif type == 's':
+                    data[key] = self.kiwoom_GetCommData(sTRCode, sRQName, 0, kr).strip()
             log.instance().logger().debug("TR: {0}\tDATA: {1}".format(sRQName, data))
-            self.dict_callback[sRQName](data)
+            self.dict_callback[sRQName] = data
 
         if self.event is not None:
             self.event.exit()
@@ -214,9 +217,9 @@ class Kiwoom(QAxWidget):
         :return:
         """
         key = "OPT10001"
-        info = self.code.code_info(key)
+        info = self.code.get_code_info(key)
         self.set_input({"종목코드": code})
-        res = self.kiwoom_CommRqData(key, key, 0, info.screen_no)
+        self.kiwoom_CommRqData(key, key, 0, info['screen_no'])
         return key
 
     def load_code_list(self):
@@ -245,3 +248,4 @@ class Kiwoom(QAxWidget):
             })
 
         self.db.add('code', kospi_list)
+        return kospi_list
