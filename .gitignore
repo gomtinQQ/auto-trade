@@ -134,3 +134,4 @@ The image will be downloaded
 venv/
 .idea/
 *.pyc
+*.log
