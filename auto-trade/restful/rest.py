@@ -5,18 +5,21 @@ from tornado.ioloop import IOLoop
 from PyQt5.QtWidgets import QApplication
 
 from util.logUtil import CommonLogger as log
-from restful.handler.AccountHandler import AccountHandler
+from restful.handler.accountHandler import AccountHandler
+from restful.handler.codeHandler import CodeHandler
 from kiwoom.kiwoom import Kiwoom
-
+from db.mdb import MongoDbManager
 
 app = QApplication(sys.argv)
-hts = Kiwoom()
+db = MongoDbManager('localhost', 'hts')
+hts = Kiwoom(db)
 
 SLEEP_TIME = 0.1
 
 def make_app():
     urls = [
-        ("/account", AccountHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
+        ("/accounts", AccountHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
+        ("/codes", CodeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
     ]
     # Autoreload seems troublesome.
     return Application(urls, debug=True, autoreload=False)
