@@ -18,6 +18,7 @@ import pandas as pd
 
 from util.logUtil import CommonLogger as log
 from kiwoom.SyncRequestDecorator import SyncRequestDecorator
+from kiwoom.code import KiwoomCode
 
 class Kiwoom(QAxWidget):
     def __init__(self):
@@ -28,6 +29,9 @@ class Kiwoom(QAxWidget):
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.OnEventConnect.connect(self.kiwoom_OnEventConnect)
         self.OnReceiveTrData.connect(self.kiwoom_OnReceiveTrData)
+
+        self.code = KiwoomCode()
+
         # self.OnReceiveRealData.connect(self.kiwoom_OnReceiveRealData)
         # self.OnReceiveConditionVer.connect(self.kiwoom_OnReceiveConditionVer)
         # self.OnReceiveTrCondition.connect(self.kiwoom_OnReceiveTrCondition)
@@ -128,6 +132,10 @@ class Kiwoom(QAxWidget):
         res = self.dynamicCall("SetInputValue(QString, QString)", sID, sValue)
         return res
 
+    def set_input(self, data):
+        for key, value in data.items():
+            self.kiwoom_CommConnect(key, value)
+
     def kiwoom_CommRqData(self, sRQName, sTrCode, nPrevNext, sScreenNo):
         """
         :param sRQName:
@@ -178,5 +186,33 @@ class Kiwoom(QAxWidget):
             if "예수금상세현황요청" in self.dict_callback:
                 self.dict_callback["예수금상세현황요청"](self.deposit)
 
+        if sRQName in self.code.code_info:
+            data = {}
+            code_info = self.code.get_code_info(sRQName)
+            for key, value in code_info.output.items():
+                if value["type"] == 'ui':
+                    data[key] = abs(int(self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr)))
+                elif value["type"] == 'i':
+                    data[key] = int(self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr))
+                elif value["type"] == 'f':
+                    data[key] = float(self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr))
+                elif value["type"] == 's':
+                    data[key] = self.kiwoom_GetCommData(sTRCode, sRQName, 0, value.kr)
+            log.instance().logger().debug("TR: {0}\tDATA: {1}".format(sRQName, data))
+            self.dict_callback[sRQName](data)
+
         if self.event is not None:
             self.event.exit()
+
+    @SyncRequestDecorator.kiwoom_sync_request
+    def kiwoom_tr_stock_info(self, code,  **kwargs):
+        """주식기본정보요청
+        :param strCode:
+        :param kwargs:
+        :return:
+        """
+        key = "OPT10001"
+        info = self.code.code_info(key)
+        self.set_input({"종목코드": code})
+        res = self.kiwoom_CommRqData(key, key, 0, info.screen_no)
+        return key
