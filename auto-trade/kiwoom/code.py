@@ -8,7 +8,7 @@ class KiwoomCode():
                     "code": {"kr": "종목코드", "type": "s"}
                     , "name": {"kr": "종목명", "type": "s"}
                     , "settlement_month": {"kr": "결산월", "type": "s"}
-                    , "face_value": {"kr": "액면가", "type": "i"}
+                    , "face_value": {"kr": "액면가", "type": "f"}
                     , "capital": {"kr": "자본금", "type": "i"}
                     , "stocks": {"kr": "상장주식", "type": "i"}
                     , "credit_ratio": {"kr": "신용비율", "type": "uf"}
@@ -18,9 +18,13 @@ class KiwoomCode():
                     # , "": {"kr": "시가총액비중", "type": ""}
                     # , "": {"kr": "외인소진률", "type": ""}
                     # , "": {"kr": "대용가", "type": ""}
+                    # 1주당 순이익 비율 Price Earnings Ratio (주가 / 주당순이익)
                     , "PER": {"kr": "PER", "type": "f"}
+                    # 주당 순이익
                     , "ESP": {"kr": "EPS", "type": "i"}
+
                     , "ROE": {"kr": "ROE", "type": "f"}
+                    # 1주당 순자산 비율 Price Book value Ratio
                     , "PBR": {"kr": "PBR", "type": "f"}
                     , "EV": {"kr": "EV", "type": "f"}
                     , "BSP": {"kr": "BPS", "type": "i"}
@@ -49,6 +53,19 @@ class KiwoomCode():
                     # , "": {"kr": "액면가단위", "type": ""}
                     , "outstanding_stock": {"kr": "유통주식", "type": "i"}
                     , "distribution_ratio": {"kr": "유통비율", "type": "f"}
+                }
+            }
+            , "OPT10081": {
+                "name": "주식일봉차트조회요청"
+                , "screen_no": "20001"
+                , "output_list": {
+                    "code": {"kr": "종목코드", "type": "s"}
+                    , "date": {"kr": "일자", "type": "s"}
+                    , "present_price": {"kr": "현재가", "type": "f"}
+                    , "volume": {"kr": "거래량", "type": "i"}
+                    , "market_price": {"kr": "시가", "type": "ui"}
+                    , "high": {"kr": "고가", "type": "ui"}
+                    , "low": {"kr": "저가", "type": "ui"}
                 }
             }
         }

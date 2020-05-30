@@ -6,7 +6,7 @@ from tornado.web import RequestHandler
 from util.logUtil import CommonLogger as log
 
 
-class CodeHandler(RequestHandler):
+class StockHandler(RequestHandler):
     def initialize(self, SLEEP_TIME, hts):
         self.SLEEP_TIME = SLEEP_TIME
         self.hts = hts
@@ -18,26 +18,22 @@ class CodeHandler(RequestHandler):
         log.instance().logger().debug("code handler")
 
         code = self.get_argument('code', None)
+        # query = self.get_argument('query', None)
         result = None
+        # if query is not None:
+
         if code is None:
-            result = self.reload_code()
-        else :
+            result = self.reload_kospi()
+        else:
             result = self.get_stock_info(code)
 
         self.write(json.dumps(result))
 
     def get_stock_info(self, code):
         hts = self.hts
+        return hts.get_stock_infopop(code, None)
 
-        tr_code = hts.kiwoom_tr_stock_info(code)['res']
-        keys = hts.dict_callback.keys()
-        while tr_code not in keys:
-            time.sleep(self.SLEEP_TIME)
-
-        return hts.dict_callback.pop(tr_code, None)
-
-    def reload_code(self):
+    def reload_kospi(self):
         hts = self.hts
         hts.deposit = None
-        return hts.load_code_list()
-
+        return hts.get_kospi_list()

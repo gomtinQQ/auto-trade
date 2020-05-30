@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import QApplication
 
 from util.logUtil import CommonLogger as log
 from restful.handler.accountHandler import AccountHandler
-from restful.handler.codeHandler import CodeHandler
+from restful.handler.stockHandler import StockHandler
+from restful.handler.stockDailyHandler import StockDailyHandler
 from kiwoom.kiwoom import Kiwoom
 from db.mdb import MongoDbManager
 
@@ -19,7 +20,8 @@ SLEEP_TIME = 0.1
 def make_app():
     urls = [
         ("/accounts", AccountHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
-        ("/codes", CodeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
+        ("/stocks", StockHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
+        ("/stocks-daily", StockDailyHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
     ]
     # Autoreload seems troublesome.
     return Application(urls, debug=True, autoreload=False)
