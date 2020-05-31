@@ -205,13 +205,23 @@ class Kiwoom(QAxWidget):
         if self.event is not None:
             self.event.exit()
 
-        if len(response) == 0:
+        # 임시 코드
+        if tr_code.lower() == 'OPT10081'.lower():
+            pre_next = 0
+
+        if isinstance(response, (dict)):
+            self.dict_callback[tr_name] = response
+            self.dict_callback_temp = None
+        elif isinstance(response, (list)) and len(response) == 0:
             self.dict_callback[tr_name] = self.dict_callback_temp.copy()
             self.dict_callback_temp = None
         elif pre_next == 0:
-            prev = self.dict_callback_temp.copy()
-            self.dict_callback_temp = None
-            self.dict_callback[tr_name] = prev.extend(response)
+            if self.dict_callback_temp is None:
+                self.dict_callback[tr_name] = response
+            else:
+                prev = self.dict_callback_temp.copy()
+                self.dict_callback_temp = None
+                self.dict_callback[tr_name] = prev.extend(response)
         else:
             if self.dict_callback_temp is None:
                 self.dict_callback_temp = response
@@ -224,7 +234,8 @@ class Kiwoom(QAxWidget):
 
         log.instance().logger().debug("연속조회")
         if tr_code.lower() == 'OPT10081'.lower():
-            self.kiwoom_tr_daily_stock_info(self.dict_callback_temp[0]["code"], self.dict_callback_temp[len(self.dict_callback_temp)-1]["date"], pre_next, '0')
+            log.instance().logger().debug("OPT10081는 안 함")
+            # self.kiwoom_tr_daily_stock_info(self.dict_callback_temp[0]["code"], self.dict_callback_temp[len(self.dict_callback_temp)-1]["date"], pre_next, '0')
 
     def get_multi_response(self, tr_code, tr_name, pre_next, output_format):
         list = []
@@ -257,7 +268,8 @@ class Kiwoom(QAxWidget):
             data[key] = self.tr_util.parse_response(value, type)
 
         log.instance().logger().debug("TR: {0}\tDATA: {1}".format(tr_name, data))
-        self.dict_callback[tr_name] = data
+        # self.dict_callback[tr_name] = data
+        return data
 
     @SyncRequestDecorator.kiwoom_sync_request
     def kiwoom_tr_stock_info(self, code,  **kwargs):
@@ -296,11 +308,43 @@ class Kiwoom(QAxWidget):
         tr_code = self.kiwoom_tr_daily_stock_info(code, date)['res']
         keys = self.dict_callback.keys()
         while tr_code not in keys:
+            print("WAIT: {0} / {1}".format(keys, code) )
             time.sleep(self.SLEEP_TIME)
-
+        # last_date = self.db.max('code', {'code': code}, 'date')
         return self.dict_callback.pop(tr_code, None)
 
-    def get_kospi_list(self):
+    def save_daily_stock_info(self, code, list):
+        table_name = 'stock_daily'
+        last_date = self.db.max(table_name, {'code': code}, 'date')
+        filtered_list = []
+        if last_date is None:
+            filtered_list = list
+        else:
+            for data in list:
+                if data['date'] == last_date:
+                    break
+                filtered_list.append(data)
+        if filtered_list:
+            self.db.add(table_name, filtered_list)
+
+    def load_saily_stock_info_by_kospi(self, date=None):
+        if date is None:
+            date = datetime.datetime.now().strftime("%Y%m%d")
+
+        kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
+        size = kospi_list.count(True)
+        count = 0
+        for k in kospi_list:
+            time.sleep(self.SLEEP_TIME*3)
+            code = k['code']
+            count += 1
+            print("load code: count {0} / size {1} ".format(count, size))
+
+            list = self.get_daily_stock_info(code, date)
+            self.save_daily_stock_info(code, list)
+            print(list)
+
+    def get_kospi_list(self, today=None):
         """
             KOSPI 정보만 불러옴
             나중에는 코스닥도 한번
@@ -309,13 +353,13 @@ class Kiwoom(QAxWidget):
         temp_kospi_code_list = ret.split(';')
         kospi_code_list = []
         kospi_list = []
-
-        today = datetime.datetime.now().strftime("%Y%m%d")
+        if today is None:
+            today = datetime.datetime.now().strftime("%Y%m%d")
 
         for v in temp_kospi_code_list:
             if not v:
                 continue
-            if int(v[:2]) <= 11:
+            if int(v[:2]) <= 12:
                 kospi_code_list.append(v)
 
         print(temp_kospi_code_list)

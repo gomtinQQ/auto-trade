@@ -11,6 +11,7 @@ from restful.handler.stockDailyHandler import StockDailyHandler
 from kiwoom.kiwoom import Kiwoom
 from db.mdb import MongoDbManager
 
+
 app = QApplication(sys.argv)
 db = MongoDbManager('localhost', 'hts')
 hts = Kiwoom(db)

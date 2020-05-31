@@ -26,5 +26,5 @@ class StockDailyHandler(RequestHandler):
         result = None
         if code is not None:
             result = self.hts.get_daily_stock_info(code, today)
-
+            self.hts.save_daily_stock_info(code, result)
         self.write(json.dumps(result))
