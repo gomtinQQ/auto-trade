@@ -16,7 +16,7 @@ class StockDailyHandler(RequestHandler):
         """
             restore kospi code
         """
-        log.instance().logger().debug("code handler")
+        log.instance().logger().debug("stock daily handler")
 
         code = self.get_argument('code', None)
         today = self.get_argument('today', None)
@@ -25,6 +25,6 @@ class StockDailyHandler(RequestHandler):
 
         result = None
         if code is not None:
-            result = self.hts.get_daily_stock_info(code, today)
-            self.hts.save_daily_stock_info(code, result)
+            result = self.hts.get_daily_stock_info_detail(code, today)
+            # self.hts.save_daily_stock_info(code, result)
         self.write(json.dumps(result))

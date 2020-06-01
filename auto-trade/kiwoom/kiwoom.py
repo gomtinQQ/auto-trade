@@ -50,6 +50,7 @@ class Kiwoom(QAxWidget):
         # 요청 결과
         self.event = None
         self.result = {}
+        self.dict_call_param = {}
 
     # -------------------------------------
     # 로그인 관련함수
@@ -202,9 +203,6 @@ class Kiwoom(QAxWidget):
             elif 'output_list' in code_info.keys():
                 response = self.get_multi_response(tr_code, tr_name, pre_next, code_info)
 
-        if self.event is not None:
-            self.event.exit()
-
         # 임시 코드
         if tr_code.lower() == 'OPT10081'.lower():
             pre_next = 0
@@ -213,8 +211,12 @@ class Kiwoom(QAxWidget):
             self.dict_callback[tr_name] = response
             self.dict_callback_temp = None
         elif isinstance(response, (list)) and len(response) == 0:
-            self.dict_callback[tr_name] = self.dict_callback_temp.copy()
-            self.dict_callback_temp = None
+            if self.dict_callback_temp is None:
+                self.dict_callback[tr_name] = []
+            else:
+                self.dict_callback[tr_name] = self.dict_callback_temp.copy()
+                self.dict_callback_temp = None
+            pre_next = 0
         elif pre_next == 0:
             if self.dict_callback_temp is None:
                 self.dict_callback[tr_name] = response
@@ -227,15 +229,37 @@ class Kiwoom(QAxWidget):
                 self.dict_callback_temp = response
             else:
                 self.dict_callback_temp.extend(response)
-            self.kiwoom_tr_recall(tr_name, tr_code, screen_no, pre_next)
+
+            pre_next = self.kiwoom_tr_recall(tr_name, tr_code, screen_no, pre_next)
+
+            if pre_next == '0':
+                temp = self.dict_callback_temp.copy()
+                self.dict_callback_temp = None
+                self.dict_callback[tr_name] = temp
+
+        if self.event and pre_next != '2':
+            self.event.exit()
 
     def kiwoom_tr_recall(self, tr_name, tr_code, screen_no, pre_next):
-        time.sleep(self.SLEEP_TIME)
+        time.sleep(1)
 
         log.instance().logger().debug("연속조회")
         if tr_code.lower() == 'OPT10081'.lower():
             log.instance().logger().debug("OPT10081는 안 함")
             # self.kiwoom_tr_daily_stock_info(self.dict_callback_temp[0]["code"], self.dict_callback_temp[len(self.dict_callback_temp)-1]["date"], pre_next, '0')
+        elif tr_code.lower() == 'OPT10086'.lower():
+            param = self.dict_call_param[tr_code]
+            if param:
+                # {"종목코드": code, "조회일자": date, "수정주가구분": type, 'last_date': last_date}
+                response = self.dict_callback_temp
+                last_date = param['last_date']
+                selected_list = list(filter(lambda x: (x['date'] < last_date), response))
+                if len(selected_list) == 0:
+                    self.kiwoom_tr_daily_stock_info_detail(param["종목코드"], param["조회일자"], param['last_date'], pre_next, param["수정주가구분"])
+                else:
+                    pre_next = '0'
+
+        return pre_next
 
     def get_multi_response(self, tr_code, tr_name, pre_next, output_format):
         list = []
@@ -251,9 +275,11 @@ class Kiwoom(QAxWidget):
                 value = self.kiwoom_GetCommData(tr_code, tr_name, i, kr).strip()
                 data[key] = self.tr_util.parse_response(value, type)
             if i == 0:
-                code = data["code"]
+                if 'code' in data.keys():
+                    code = data["code"]
             else:
-                data["code"] = code
+                if code:
+                    data["code"] = code
             list.append(data)
 
         log.instance().logger().debug("TR: {0}\tDATA: {1}".format(tr_name, list))
@@ -293,6 +319,38 @@ class Kiwoom(QAxWidget):
         return self.dict_callback.pop(tr_code, None)
 
     @SyncRequestDecorator.kiwoom_sync_request
+    def kiwoom_tr_daily_stock_info_detail(self, code, date, last_date, pre_next='0', type='0'):
+        """
+        type: 0:수량, 1:금액(백만원)
+        """
+        key = "OPT10086"
+        info = self.code.get_code_info(key)
+        param = {"종목코드": code, "조회일자": date, "수정주가구분": type, 'last_date': last_date}
+        self.dict_call_param[key] = param
+        self.set_input(param)
+        self.kiwoom_CommRqData(key, key, pre_next, info['screen_no'])
+        return key
+
+    def get_daily_stock_info_detail(self, code, date, type='0'):
+        last_date = self.db.max('stock_daily_detail', {'code': code}, 'date')
+        if not last_date:
+            last_date = datetime.datetime.now() - datetime.timedelta(days=2 * 365)
+            last_date = last_date.strftime("%Y%m%d")
+
+        tr_code = self.kiwoom_tr_daily_stock_info_detail(code, date, last_date)['res']
+        keys = self.dict_callback.keys()
+
+        count = 0
+        while tr_code not in keys:
+            count += 1
+            print("WAIT: {0} / {1} : {2}".format(keys, code, count))
+            time.sleep(self.SLEEP_TIME)
+        result = self.dict_callback.pop(tr_code, None)
+        return list(filter(lambda x: (x['individual_amount'] != 0
+                                      and x['institute_amount'] != 0
+                                      and x['foreigner_amount'] != 0), result))
+
+    @SyncRequestDecorator.kiwoom_sync_request
     def kiwoom_tr_daily_stock_info(self, code, date, pre_next='0', type='0'):
         key = "OPT10081"
         info = self.code.get_code_info(key)
@@ -313,14 +371,14 @@ class Kiwoom(QAxWidget):
         # last_date = self.db.max('code', {'code': code}, 'date')
         return self.dict_callback.pop(tr_code, None)
 
-    def save_daily_stock_info(self, code, list):
+    def save_daily_stock_info(self, code, stock_list):
         table_name = 'stock_daily'
         last_date = self.db.max(table_name, {'code': code}, 'date')
         filtered_list = []
         if last_date is None:
-            filtered_list = list
+            filtered_list = stock_list
         else:
-            for data in list:
+            for data in stock_list:
                 if data['date'] == last_date:
                     break
                 filtered_list.append(data)
@@ -334,15 +392,17 @@ class Kiwoom(QAxWidget):
         kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
         size = kospi_list.count(True)
         count = 0
+        # 3 mins sleep
+        # time.sleep(1 * 3 * 60)
         for k in kospi_list:
             time.sleep(self.SLEEP_TIME*3)
             code = k['code']
             count += 1
             print("load code: count {0} / size {1} ".format(count, size))
 
-            list = self.get_daily_stock_info(code, date)
-            self.save_daily_stock_info(code, list)
-            print(list)
+            stock_list = self.get_daily_stock_info(code, date)
+            self.save_daily_stock_info(code, stock_list)
+            print(stock_list)
 
     def get_kospi_list(self, today=None):
         """

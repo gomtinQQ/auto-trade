@@ -68,6 +68,30 @@ class KiwoomCode():
                     , "low": {"kr": "저가", "type": "ui"}
                 }
             }
+            , "OPT10086": {
+                "name": "일별주가요청"
+                , "screen_no": "20002"
+                , "output_list": {
+                    "date": {"kr": "날짜", "type": "s"}
+                    , "market_price": {"kr": "시가", "type": "ui"}
+                    , "high": {"kr": "고가", "type": "ui"}
+                    , "low": {"kr": "저가", "type": "ui"}
+                    , "close_price": {"kr": "종가", "type": "ui"}
+                    , "net_change": {"kr": "전일비", "type": "i"}
+                    , "fluctuation_rate": {"kr": "등락율", "type": "f"}
+                    , "volume": {"kr": "거래량", "type": "i"}
+                    , "individual_amount": {"kr": "개인", "type": "i"}
+                    , "institute_amount": {"kr": "기관", "type": "i"}
+                    , "foreigner_amount": {"kr": "외인수량", "type": "i"}
+                    , "program_amount": {"kr": "프로그램", "type": "i"}
+                    , "foreigner_volume": {"kr": "외인보유", "type": "f"}
+                    , "foreigner_ratio": {"kr": "외인비중", "type": "f"}
+                    , "foreigner_net_purchase": {"kr": "외인순매수", "type": "i"}
+                    , "institute_net_purchase": {"kr": "기관순매수", "type": "i"}
+                    , "individual_net_purchase": {"kr": "개인순매수", "type": "i"}
+                }
+            }
+
         }
 
     def in_code(self, code):

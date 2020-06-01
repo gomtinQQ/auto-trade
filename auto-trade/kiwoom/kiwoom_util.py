@@ -6,6 +6,7 @@ class Kiwoom_tr_parse_util():
         log.instance().logger().debug("Kiwoom_tr_parse_util init")
 
     def parse_response(self, value, type):
+        value = value.replace('--', '-')
         if type == 'ui':
             if not value:
                 value = '0'
