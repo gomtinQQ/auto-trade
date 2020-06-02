@@ -23,7 +23,8 @@ class MongoDbManager():
     def add(self, table_name, data):
         table = self.get_table(table_name)
         if isinstance(data, (list)):
-            table.insert_many(data)
+            if len(data) > 0:
+                table.insert_many(data)
         elif isinstance(data, (dict)):
             table.insert_one(data)
 

@@ -233,15 +233,18 @@ class Kiwoom(QAxWidget):
             pre_next = self.kiwoom_tr_recall(tr_name, tr_code, screen_no, pre_next)
 
             if pre_next == '0':
-                temp = self.dict_callback_temp.copy()
-                self.dict_callback_temp = None
-                self.dict_callback[tr_name] = temp
+                if self.dict_callback_temp:
+                    temp = self.dict_callback_temp.copy()
+                    self.dict_callback_temp = None
+                    self.dict_callback[tr_name] = temp
+                else:
+                    self.dict_callback[tr_name] = []
 
         if self.event and pre_next != '2':
             self.event.exit()
 
     def kiwoom_tr_recall(self, tr_name, tr_code, screen_no, pre_next):
-        time.sleep(1)
+        time.sleep(3.6)
 
         log.instance().logger().debug("연속조회")
         if tr_code.lower() == 'OPT10081'.lower():
@@ -332,8 +335,9 @@ class Kiwoom(QAxWidget):
         return key
 
     def get_daily_stock_info_detail(self, code, date, type='0'):
-        last_date = self.db.max('stock_daily_detail', {'code': code}, 'date')
+        last_date = self.db.max('stock_daily', {'code': code}, 'date')
         if not last_date:
+            #last_date = datetime.datetime.now() - datetime.timedelta(days=2 * 2)
             last_date = datetime.datetime.now() - datetime.timedelta(days=2 * 365)
             last_date = last_date.strftime("%Y%m%d")
 
@@ -346,10 +350,14 @@ class Kiwoom(QAxWidget):
             print("WAIT: {0} / {1} : {2}".format(keys, code, count))
             time.sleep(self.SLEEP_TIME)
         result = self.dict_callback.pop(tr_code, None)
-        return list(filter(lambda x: (x['individual_amount'] != 0
+        filtered_list = list(filter(lambda x: (x['individual_amount'] != 0
                                       and x['institute_amount'] != 0
                                       and x['foreigner_amount'] != 0), result))
 
+        for data in filtered_list:
+            data['code'] = code
+
+        return filtered_list
     @SyncRequestDecorator.kiwoom_sync_request
     def kiwoom_tr_daily_stock_info(self, code, date, pre_next='0', type='0'):
         key = "OPT10081"
@@ -385,7 +393,7 @@ class Kiwoom(QAxWidget):
         if filtered_list:
             self.db.add(table_name, filtered_list)
 
-    def load_saily_stock_info_by_kospi(self, date=None):
+    def load_daily_stock_info_by_kospi(self, date=None):
         if date is None:
             date = datetime.datetime.now().strftime("%Y%m%d")
 
@@ -400,7 +408,7 @@ class Kiwoom(QAxWidget):
             count += 1
             print("load code: count {0} / size {1} ".format(count, size))
 
-            stock_list = self.get_daily_stock_info(code, date)
+            stock_list = self.get_daily_stock_info_detail(code, date)
             self.save_daily_stock_info(code, stock_list)
             print(stock_list)
 
