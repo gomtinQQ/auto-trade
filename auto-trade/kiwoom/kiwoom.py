@@ -205,7 +205,7 @@ class Kiwoom(QAxWidget):
 
         # 임시 코드
         if tr_code.lower() == 'OPT10081'.lower():
-            pre_next = 0
+            pre_next = '0'
 
         if isinstance(response, (dict)):
             self.dict_callback[tr_name] = response
@@ -216,14 +216,15 @@ class Kiwoom(QAxWidget):
             else:
                 self.dict_callback[tr_name] = self.dict_callback_temp.copy()
                 self.dict_callback_temp = None
-            pre_next = 0
-        elif pre_next == 0:
+            pre_next = '0'
+        elif pre_next == '0':
             if self.dict_callback_temp is None:
                 self.dict_callback[tr_name] = response
             else:
                 prev = self.dict_callback_temp.copy()
                 self.dict_callback_temp = None
-                self.dict_callback[tr_name] = prev.extend(response)
+                prev.extend(response)
+                self.dict_callback[tr_name] = prev
         else:
             if self.dict_callback_temp is None:
                 self.dict_callback_temp = response
@@ -244,7 +245,7 @@ class Kiwoom(QAxWidget):
             self.event.exit()
 
     def kiwoom_tr_recall(self, tr_name, tr_code, screen_no, pre_next):
-        time.sleep(3.6)
+        time.sleep(1)
 
         log.instance().logger().debug("연속조회")
         if tr_code.lower() == 'OPT10081'.lower():
@@ -336,6 +337,10 @@ class Kiwoom(QAxWidget):
 
     def get_daily_stock_info_detail(self, code, date, type='0'):
         last_date = self.db.max('stock_daily', {'code': code}, 'date')
+        yesterday = datetime.datetime.now() - datetime.timedelta(days=2)
+        if date == last_date or last_date == yesterday:
+            return []
+
         if not last_date:
             #last_date = datetime.datetime.now() - datetime.timedelta(days=2 * 2)
             last_date = datetime.datetime.now() - datetime.timedelta(days=2 * 365)
@@ -350,9 +355,10 @@ class Kiwoom(QAxWidget):
             print("WAIT: {0} / {1} : {2}".format(keys, code, count))
             time.sleep(self.SLEEP_TIME)
         result = self.dict_callback.pop(tr_code, None)
-        filtered_list = list(filter(lambda x: (x['individual_amount'] != 0
-                                      and x['institute_amount'] != 0
-                                      and x['foreigner_amount'] != 0), result))
+        filtered_list = list(filter(lambda x: (x
+                                                and x['individual_amount'] != 0
+                                                and x['institute_amount'] != 0
+                                                and x['foreigner_amount'] != 0), result))
 
         for data in filtered_list:
             data['code'] = code
