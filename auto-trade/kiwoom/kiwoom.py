@@ -404,7 +404,7 @@ class Kiwoom(QAxWidget):
             date = datetime.datetime.now().strftime("%Y%m%d")
 
         kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
-        size = kospi_list.count(True)
+        size = len(kospi_list)
         count = 0
         # 3 mins sleep
         # time.sleep(1 * 3 * 60)
