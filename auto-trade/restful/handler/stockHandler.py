@@ -38,3 +38,4 @@ class StockHandler(RequestHandler):
         hts.deposit = None
         hts.get_kospi_list()
         hts.load_daily_stock_info_by_kospi()
+        return []

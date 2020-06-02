@@ -245,7 +245,7 @@ class Kiwoom(QAxWidget):
             self.event.exit()
 
     def kiwoom_tr_recall(self, tr_name, tr_code, screen_no, pre_next):
-        time.sleep(1)
+        time.sleep(3)
 
         log.instance().logger().debug("연속조회")
         if tr_code.lower() == 'OPT10081'.lower():
@@ -408,6 +408,7 @@ class Kiwoom(QAxWidget):
         count = 0
         # 3 mins sleep
         # time.sleep(1 * 3 * 60)
+
         for k in kospi_list:
             time.sleep(self.SLEEP_TIME*3)
             code = k['code']
@@ -441,7 +442,7 @@ class Kiwoom(QAxWidget):
         # return kospi_code_list
         pre = self.db.find('code', {'date': today})
         # pre = self.db.find('code', {'date': '20200529'})
-        print(pre.count())
+        print(len(pre))
         pre_code_list = []
         # { "address": { "$regex": "^S" } }
         codes = []
@@ -509,11 +510,5 @@ class Kiwoom(QAxWidget):
         stored_list = self.db.find('code', {'date': today})
         # pre = self.db.find('code', {'date': '20200529'})
         # { "address": { "$regex": "^S" } }
-        result = []
-        if stored_list is not None:
-            for x in stored_list:
-                if 'code' in x.keys():
-                    x.pop('_id')
-                    result.append(x)
 
-        return result
+        return stored_list

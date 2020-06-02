@@ -15,10 +15,18 @@ class MongoDbManager():
     def find(self, table_name, query, filter=None):
         # query = {"address": "Park Lane 38"}
         table = self.get_table(table_name)
+        find_result = None
         if filter is None:
-            return table.find(query)
+            find_result = table.find(query)
         else:
-            return table.find(query, filter)
+            find_result = table.find(query, filter)
+
+        if find_result:
+            find_result = list(find_result)
+        for x in find_result:
+            if x['_id']:
+                del x['_id']
+        return find_result
 
     def add(self, table_name, data):
         table = self.get_table(table_name)
