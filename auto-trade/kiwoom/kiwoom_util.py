@@ -21,8 +21,6 @@ class Kiwoom_tr_parse_util():
             value = float(value)
         elif type == 's':
             value = value
-
         # log.instance().logger().debug("TR: {0}\tDATA: {1}".format(value, type))
-
         return value
 
