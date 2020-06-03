@@ -29,7 +29,7 @@ class Kiwoom(QAxWidget):
         super().__init__()
 
         self.SLEEP_TIME = 0.2
-        self.LONG_SLEEP_TIME = 4
+        self.LONG_SLEEP_TIME = 1
 
         self.db = db
 
@@ -412,12 +412,9 @@ class Kiwoom(QAxWidget):
             date = datetime.datetime.now().strftime("%Y%m%d")
 
         kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
-<<<<<<< HEAD
-=======
 
         stored_list = self.db.find('stock_daily_record', {'date': date})
 
->>>>>>> 04048124111729640f6a7d21cc605e255b440d57
         size = len(kospi_list)
         count = 0
         # 3 mins sleep
