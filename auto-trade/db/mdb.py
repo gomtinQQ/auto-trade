@@ -30,10 +30,11 @@ class MongoDbManager():
 
     def add(self, table_name, data):
         table = self.get_table(table_name)
-        if isinstance(data, (list)):
+        # if isinstance(data, (list)):
+        if isinstance(data, list):
             if len(data) > 0:
                 table.insert_many(data)
-        elif isinstance(data, (dict)):
+        elif isinstance(data, dict):
             table.insert_one(data)
 
     def edit(self, table_name, query, row):
@@ -68,6 +69,11 @@ class MongoDbManager():
         if "stock_daily" not in self.db.list_collection_names():
             self.get_table("stock_daily").create_index(
                 [("code", pymongo.ASCENDING), ("date", pymongo.DESCENDING)],
+                unique=True
+            )
+        if "stock_daily_record" not in self.db.list_collection_names():
+            self.get_table("stock_daily_record").create_index(
+                [("date", pymongo.DESCENDING), ("code", pymongo.ASCENDING)],
                 unique=True
             )
 

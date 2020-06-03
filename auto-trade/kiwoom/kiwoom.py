@@ -20,6 +20,8 @@ from util.logUtil import CommonLogger as log
 from kiwoom.SyncRequestDecorator import SyncRequestDecorator
 from kiwoom.code import KiwoomCode
 from kiwoom.kiwoom_util import Kiwoom_tr_parse_util
+from kiwoom.kiwoom_error import kiwoom_errors as errors
+
 
 class Kiwoom(QAxWidget):
     def __init__(self, db):
@@ -27,6 +29,7 @@ class Kiwoom(QAxWidget):
         super().__init__()
 
         self.SLEEP_TIME = 0.2
+        self.LONG_SLEEP_TIME = 4
 
         self.db = db
 
@@ -154,6 +157,10 @@ class Kiwoom(QAxWidget):
         :return:
         """
         res = self.dynamicCall("CommRqData(QString, QString, int, QString)", sRQName, sTrCode, nPrevNext, sScreenNo)
+        log.instance().logger().debug("CommRqData RES: {0}".format(res))
+        if res > 0:
+            log.instance().logger().debug("CommRqData RES: {0}".format(errors(res)))
+            self.event.exit()
         return res
 
     def kiwoom_GetCommData(self, sTRCode, sRQName, nIndex, sItemName):
@@ -245,7 +252,7 @@ class Kiwoom(QAxWidget):
             self.event.exit()
 
     def kiwoom_tr_recall(self, tr_name, tr_code, screen_no, pre_next):
-        time.sleep(3)
+        time.sleep(self.LONG_SLEEP_TIME)
 
         log.instance().logger().debug("연속조회")
         if tr_code.lower() == 'OPT10081'.lower():
@@ -404,19 +411,27 @@ class Kiwoom(QAxWidget):
             date = datetime.datetime.now().strftime("%Y%m%d")
 
         kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
-        size = kospi_list.count(True)
+
+        stored_list = self.db.find('stock_daily_record', {'date': date})
+
+        size = len(kospi_list)
         count = 0
         # 3 mins sleep
         # time.sleep(1 * 3 * 60)
 
         for k in kospi_list:
-            time.sleep(self.SLEEP_TIME*3)
+            # time.sleep(self.SLEEP_TIME*3)
             code = k['code']
+            temp_list = list(filter(lambda x: (x['code'] == code), stored_list))
             count += 1
+            if len(temp_list) > 0:
+                print("ALREADY STORED: ", code)
+                continue
+            time.sleep(self.LONG_SLEEP_TIME)
             print("load code: count {0} / size {1} ".format(count, size))
-
             stock_list = self.get_daily_stock_info_detail(code, date)
             self.save_daily_stock_info(code, stock_list)
+            self.db.add('stock_daily_record', {'date': date, 'code': code})
             print(stock_list)
 
     def get_kospi_list(self, today=None):
