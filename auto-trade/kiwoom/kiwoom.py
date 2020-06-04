@@ -252,6 +252,7 @@ class Kiwoom(QAxWidget):
             self.event.exit()
 
     def kiwoom_tr_recall(self, tr_name, tr_code, screen_no, pre_next):
+        time.sleep(3.6)
         time.sleep(self.LONG_SLEEP_TIME)
 
         log.instance().logger().debug("연속조회")
