@@ -29,7 +29,7 @@ class Kiwoom(QAxWidget):
         super().__init__()
 
         self.SLEEP_TIME = 0.2
-        self.LONG_SLEEP_TIME = 4
+        self.LONG_SLEEP_TIME = 1
 
         self.db = db
 
@@ -158,7 +158,7 @@ class Kiwoom(QAxWidget):
         """
         res = self.dynamicCall("CommRqData(QString, QString, int, QString)", sRQName, sTrCode, nPrevNext, sScreenNo)
         log.instance().logger().debug("CommRqData RES: {0}".format(res))
-        if res > 0:
+        if res < 0:
             log.instance().logger().debug("CommRqData RES: {0}".format(errors(res)))
             self.event.exit()
         return res
@@ -357,12 +357,16 @@ class Kiwoom(QAxWidget):
         keys = self.dict_callback.keys()
 
         count = 0
+
         while tr_code not in keys:
             count += 1
             print("WAIT: {0} / {1} : {2}".format(keys, code, count))
             time.sleep(self.SLEEP_TIME)
+            if count > self.SLEEP_TIME * 20:
+                break;
         result = self.dict_callback.pop(tr_code, None)
-        filtered_list = list(filter(lambda x: (x
+        if result:
+            filtered_list = list(filter(lambda x: (x
                                                 and x['individual_amount'] != 0
                                                 and x['institute_amount'] != 0
                                                 and x['foreigner_amount'] != 0), result))
