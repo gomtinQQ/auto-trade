@@ -29,7 +29,7 @@ class Kiwoom(QAxWidget):
         super().__init__()
 
         self.SLEEP_TIME = 0.2
-        self.LONG_SLEEP_TIME = 1
+        self.LONG_SLEEP_TIME = 4
 
         self.db = db
 
@@ -325,8 +325,12 @@ class Kiwoom(QAxWidget):
     def get_stock_info(self, code):
         tr_code = self.kiwoom_tr_stock_info(code)['res']
         keys = self.dict_callback.keys()
+        count = 0
         while tr_code not in keys:
+            count += 1
             time.sleep(self.SLEEP_TIME)
+            if count > self.SLEEP_TIME * 100:
+                break
 
         return self.dict_callback.pop(tr_code, None)
 
@@ -366,16 +370,18 @@ class Kiwoom(QAxWidget):
             if count > self.SLEEP_TIME * 20:
                 break;
         result = self.dict_callback.pop(tr_code, None)
+        filtered_list = []
         if result:
             filtered_list = list(filter(lambda x: (x
                                                 and x['individual_amount'] != 0
                                                 and x['institute_amount'] != 0
                                                 and x['foreigner_amount'] != 0), result))
 
-        for data in filtered_list:
-            data['code'] = code
+            for data in filtered_list:
+                data['code'] = code
 
         return filtered_list
+
     @SyncRequestDecorator.kiwoom_sync_request
     def kiwoom_tr_daily_stock_info(self, code, date, pre_next='0', type='0'):
         key = "OPT10081"
@@ -414,8 +420,8 @@ class Kiwoom(QAxWidget):
     def load_daily_stock_info_by_kospi(self, date=None):
         if date is None:
             date = datetime.datetime.now().strftime("%Y%m%d")
-
-        kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
+        kospi_list = self.db.find('code', {'date': date, 'standard_price': {'$gte': '10000'}, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
+        # kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
 
         stored_list = self.db.find('stock_daily_record', {'date': date})
 

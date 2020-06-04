@@ -19,6 +19,10 @@ class Kiwoom_tr_parse_util():
             if not value:
                 value = '-1'
             value = float(value)
+        elif type == 'uf':
+            if not value:
+                value = '-1'
+            value = abs(float(value))
         elif type == 's':
             value = value
         # log.instance().logger().debug("TR: {0}\tDATA: {1}".format(value, type))
