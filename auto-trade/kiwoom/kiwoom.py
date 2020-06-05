@@ -420,7 +420,12 @@ class Kiwoom(QAxWidget):
     def load_daily_stock_info_by_kospi(self, date=None):
         if date is None:
             date = datetime.datetime.now().strftime("%Y%m%d")
-        kospi_list = self.db.find('code', {'date': date, 'standard_price': {'$gte': '10000'}, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
+        kospi_list = self.db.find('code'
+                                  , {'date': date
+                                      , 'standard_price': {'$gte': 5000}
+                                      , 'PER': {'$gte': 8, '$lte': 20}
+                                     }
+                                  )
         # kospi_list = self.db.find('code', {'date': date, 'PER': {'$gte': 8}, 'PER': {'$lte': 20}})
 
         stored_list = self.db.find('stock_daily_record', {'date': date})
