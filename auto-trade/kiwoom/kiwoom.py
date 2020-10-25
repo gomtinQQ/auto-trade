@@ -41,7 +41,7 @@ class Kiwoom(QAxWidget):
         self.code = KiwoomCode()
         self.tr_util = Kiwoom_tr_parse_util()
 
-        # self.OnReceiveRealData.connect(self.kiwoom_OnReceiveRealData)
+        self.OnReceiveRealData.connect(self.kiwoom_OnReceiveRealData)
         # self.OnReceiveConditionVer.connect(self.kiwoom_OnReceiveConditionVer)
         # self.OnReceiveTrCondition.connect(self.kiwoom_OnReceiveTrCondition)
         # self.OnReceiveRealCondition.connect(self.kiwoom_OnReceiveRealCondition)
@@ -54,6 +54,11 @@ class Kiwoom(QAxWidget):
         self.event = None
         self.result = {}
         self.dict_call_param = {}
+
+        # 장 상태
+        self.market_state_screen = 1000
+        self.market_state_fid = 251
+        self.market_state_open = False
 
     # -------------------------------------
     # 로그인 관련함수
@@ -87,6 +92,33 @@ class Kiwoom(QAxWidget):
         if result[-1] == '':
             result.pop()
         return result
+
+    def check_market_state(self):
+        self.dynamicCall("SetRealReg(QString, QString, QString, QString)"
+                         , self.market_state_screen
+                         , ''
+                         , self.market_state_fid, "0")
+
+    def kiwoom_OnReceiveRealData(self, sCode, sRealType, sRealData):
+        log.instance().logger().debug("REAL DATA: {0}, {1}, {2}".format(sCode, sRealType, sRealData))
+        if sRealType == "장시작시간":
+            self.set_market_state(sCode)
+
+    def set_market_state(self, sCode):
+        value = self.kiwoom_GetRealData(sCode, self.market_state_fid)
+        if(value == '0'):
+            # 장시작전
+            self.market_state_open = False
+        elif(value == '3'):
+            # 장 시작
+            self.market_state_open = True
+        elif (value == '3'):
+            # 장 종료 동시호가
+            self.market_state_open = False
+        elif (value == '3'):
+            # 장 종료
+            self.market_state_open = False
+        return value
 
     @SyncRequestDecorator.kiwoom_sync_callback
     def kiwoom_OnEventConnect(self, nErrCode, **kwargs):
@@ -173,6 +205,9 @@ class Kiwoom(QAxWidget):
         """
         res = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTRCode, sRQName, nIndex, sItemName)
         return res
+
+    def kiwoom_GetRealData(self, sCode, fid):
+        return self.dynamicCall("GetCommRealData(QString, int)", sCode, fid)
 
     @SyncRequestDecorator.kiwoom_sync_callback
     def kiwoom_OnReceiveTrData(self, screen_no, tr_name, tr_code, record_name, pre_next, data_length, error_code, message, sSPlmMsg, **kwargs):

@@ -21,7 +21,7 @@ class KiwoomCode():
                     # 1주당 순이익 비율 Price Earnings Ratio (주가 / 주당순이익)
                     , "PER": {"kr": "PER", "type": "f"}
                     # 주당 순이익
-                    , "ESP": {"kr": "EPS", "type": "i"}
+                    , "EPS": {"kr": "EPS", "type": "i"}
 
                     , "ROE": {"kr": "ROE", "type": "f"}
                     # 1주당 순자산 비율 Price Book value Ratio
@@ -91,6 +91,10 @@ class KiwoomCode():
                     , "individual_net_purchase": {"kr": "개인순매수", "type": "i"}
                 }
             }
+            , "": {
+
+            }
+
 
         }
 

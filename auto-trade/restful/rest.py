@@ -10,7 +10,7 @@ from restful.handler.stockHandler import StockHandler
 from restful.handler.stockDailyHandler import StockDailyHandler
 from kiwoom.kiwoom import Kiwoom
 from db.mdb import MongoDbManager
-
+import time
 
 app = QApplication(sys.argv)
 db = MongoDbManager('localhost', 'hts')
@@ -51,6 +51,9 @@ if __name__ == "__main__":
     tornado_app.listen(port)
     # tornado.autoreload.add_reload_hook(shutdown)
     log.instance().logger().debug('RESTful api server started at port {}'.format(port))
+
+    time.sleep(5)
+    hts.check_market_state()
 
     #try:
     #    IOLoop.instance().start()
