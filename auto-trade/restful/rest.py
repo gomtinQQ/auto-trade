@@ -8,6 +8,7 @@ from util.logUtil import CommonLogger as log
 from restful.handler.accountHandler import AccountHandler
 from restful.handler.stockHandler import StockHandler
 from restful.handler.stockDailyHandler import StockDailyHandler
+from restful.handler.realtimeHandler import RealTimeHandler
 from kiwoom.kiwoom import Kiwoom
 from db.mdb import MongoDbManager
 import time
@@ -23,9 +24,12 @@ def make_app():
         ("/accounts", AccountHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
         ("/stocks", StockHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
         ("/stocks-daily", StockDailyHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
+        ("/real", RealTimeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
+
     ]
     # Autoreload seems troublesome.
     return Application(urls, debug=True, autoreload=False)
+
 
 if __name__ == "__main__":
     # login
@@ -52,9 +56,9 @@ if __name__ == "__main__":
     # tornado.autoreload.add_reload_hook(shutdown)
     log.instance().logger().debug('RESTful api server started at port {}'.format(port))
 
-    time.sleep(5)
-    hts.check_market_state()
-
+    # time.sleep(5)
+    # hts.check_market_state("code001", "008350;000400")
+    # hts.commKwRqData("352820;353200", 2, "종목정보 테스트", "10000")
     #try:
     #    IOLoop.instance().start()
     #except KeyboardInterrupt:

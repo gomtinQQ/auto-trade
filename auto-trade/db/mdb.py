@@ -41,6 +41,10 @@ class MongoDbManager():
         table = self.get_table(table_name)
         table.update_one(query, {"$set": row})
 
+    def remove(self, table_name):
+        table = self.get_table(table_name)
+        table.remove()
+
     def max(self, table_name, query, field):
         table = self.get_table(table_name)
         result = table.find(query).sort(field, -1).limit(1)
@@ -58,6 +62,24 @@ class MongoDbManager():
     def min(self, table_name, query, field):
         table = self.get_table(table_name)
         return table.find(query).sort({field: -1}).limit(1)
+
+    def count(self, table_name, query={}):
+        table = self.get_table(table_name)
+        return table.count(query)
+
+    def page(self, table_name, page, size, query={}, sort=None):
+        table = self.get_table(table_name)
+        find_result = table.find(query).skip((page - 1) * size).limit(size) if sort is None else table.find(query).sort(sort).skip((page - 1) * size).limit(size)
+        if find_result:
+            find_result = list(find_result)
+        for x in find_result:
+            if x['_id']:
+                del x['_id']
+        return find_result
+
+    def dist(self, table_name, column, query={}):
+        table = self.get_table(table_name)
+        return table.find(query).distinct(column)
 
     def init_collection(self):
         if "code" not in self.db.list_collection_names():
@@ -79,13 +101,27 @@ class MongoDbManager():
 
 
 if __name__ == "__main__":
+    """
     db = MongoDbManager('localhost', 'test')
     # db.add('company', {'code': '00000', 'value': 'test0'})
     # db.add('company', {'code': '00001', 'value': 'test1'})
     # db.add('company', [{'code': '00002', 'value': 'test1'}, {'code': '00003', 'value': 'test3'}])
+    
     result = db.find('company', {'code': '00000'})
     list = []
     # { "address": { "$regex": "^S" } }
     for x in result:
         list.append(x)
     print(list)
+    """
+    db = MongoDbManager('localhost', 'hts')
+    list = db.dist("stock_info", "categoryC")
+    print(list)
+    sum = 0
+    for i in list:
+        c = db.count("stock_info", {"categoryC": i})
+        sum += c
+        print("{0}: {1}".format(i, c))
+
+    print(sum)
+

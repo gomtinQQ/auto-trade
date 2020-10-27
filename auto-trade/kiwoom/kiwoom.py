@@ -18,7 +18,7 @@ import pandas as pd
 
 from util.logUtil import CommonLogger as log
 from kiwoom.SyncRequestDecorator import SyncRequestDecorator
-from kiwoom.code import KiwoomCode
+from kiwoom.code import KiwoomCode, RealType
 from kiwoom.kiwoom_util import Kiwoom_tr_parse_util
 from kiwoom.kiwoom_error import kiwoom_errors as errors
 
@@ -33,15 +33,18 @@ class Kiwoom(QAxWidget):
 
         self.db = db
 
+        self.realType = RealType()
+
         # 키움 시그널 연결
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.OnEventConnect.connect(self.kiwoom_OnEventConnect)
         self.OnReceiveTrData.connect(self.kiwoom_OnReceiveTrData)
+        self.OnReceiveRealData.connect(self.kiwoom_OnReceiveRealData)
+        #self.OnReceiveRealCondition.connect(self.kiwoom_OnReceiveRealCondition)
 
         self.code = KiwoomCode()
         self.tr_util = Kiwoom_tr_parse_util()
 
-        self.OnReceiveRealData.connect(self.kiwoom_OnReceiveRealData)
         # self.OnReceiveConditionVer.connect(self.kiwoom_OnReceiveConditionVer)
         # self.OnReceiveTrCondition.connect(self.kiwoom_OnReceiveTrCondition)
         # self.OnReceiveRealCondition.connect(self.kiwoom_OnReceiveRealCondition)
@@ -56,8 +59,8 @@ class Kiwoom(QAxWidget):
         self.dict_call_param = {}
 
         # 장 상태
-        self.market_state_screen = 1000
-        self.market_state_fid = 251
+        self.market_state_screen = "1000"
+        self.market_state_fid = "251"
         self.market_state_open = False
 
     # -------------------------------------
@@ -92,17 +95,6 @@ class Kiwoom(QAxWidget):
         if result[-1] == '':
             result.pop()
         return result
-
-    def check_market_state(self):
-        self.dynamicCall("SetRealReg(QString, QString, QString, QString)"
-                         , self.market_state_screen
-                         , ''
-                         , self.market_state_fid, "0")
-
-    def kiwoom_OnReceiveRealData(self, sCode, sRealType, sRealData):
-        log.instance().logger().debug("REAL DATA: {0}, {1}, {2}".format(sCode, sRealType, sRealData))
-        if sRealType == "장시작시간":
-            self.set_market_state(sCode)
 
     def set_market_state(self, sCode):
         value = self.kiwoom_GetRealData(sCode, self.market_state_fid)
@@ -206,6 +198,82 @@ class Kiwoom(QAxWidget):
         res = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTRCode, sRQName, nIndex, sItemName)
         return res
 
+    @SyncRequestDecorator.kiwoom_sync_request
+    def check_market_state(self, screenId, codes):
+        # fid = "10;20;11;12;15;13;14;15;29;567;568;"
+        fid = "10;20;11;12;15;13;14;15;29;567;568;"
+        res = self.dynamicCall("SetRealReg(QString, QString, QString, QString)"
+                         , screenId
+                         , codes
+                         , fid, "0")
+        log.instance().logger().debug("CommKwRqData RES: {0}".format(res))
+        if res < 0:
+            log.instance().logger().debug("CommKwRqData RES: {0}".format(errors(res)))
+            self.event.exit()
+
+    def kiwoom_OnReceiveRealData(self, sCode, sRealType, sRealData):
+        log.instance().logger().debug("REAL DATA: {0}, {1}, {2}".format(sCode, sRealType, sRealData))
+        if sRealType == "장시작시간":
+            self.set_market_state(sCode)
+        elif sRealType == "주식체결":
+            print(self.get_real_stock_info(sCode, sRealType))
+
+    def get_real_stock_info(self, sCode, sRealType):
+
+        # 10;20;11;12;15;13;14;15;29;567;568;
+        cmd = "GetCommRealData(QString, int)"
+        # 출력 HHMMSS
+        a = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['체결시간'])
+
+        # 출력 : +(-)2520
+        b = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['현재가'])
+        b = abs(int(b))
+
+        # 출력 : +(-)2520
+        c = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['전일대비'])
+        c = abs(int(c))
+
+        # 출력 : +(-)12.98
+        d = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['등락율'])
+        d = float(d)
+
+        # 출력 : +240124  매수일때, -2034 매도일 때
+        g = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['거래량'])
+        g = abs(int(g))
+
+        # 출력 : 240124
+        h = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['누적거래량'])
+        h = abs(int(h))
+
+        return {
+            "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+            "time": a,
+            "code": sCode,
+            "price": b,
+            "diffPrice": c,
+            "rate": d,
+            "amount": g,
+            "accAmount": h
+        }
+
+
+    def set_market_state(self, sCode):
+        value = self.kiwoom_GetRealData(sCode, self.market_state_fid)
+        if(value == '0'):
+            # 장시작전
+            self.market_state_open = False
+        elif(value == '3'):
+            # 장 시작
+            self.market_state_open = True
+        elif (value == '3'):
+            # 장 종료 동시호가
+            self.market_state_open = False
+        elif (value == '3'):
+            # 장 종료
+            self.market_state_open = False
+        return value
+
+
     def kiwoom_GetRealData(self, sCode, fid):
         return self.dynamicCall("GetCommRealData(QString, int)", sCode, fid)
 
@@ -229,7 +297,7 @@ class Kiwoom(QAxWidget):
         :param kwargs:
         :return:
         """
-
+        log.instance().logger().debug("TR name : {0} | code : {1}".format(tr_name, tr_code))
         if tr_name == "예수금상세현황요청":
             self.deposit = int(self.kiwoom_GetCommData(tr_code, tr_name, 0, "주문가능금액"))
             log.instance().logger().debug("예수금상세현황요청: %s" % (self.deposit,))
@@ -578,3 +646,55 @@ class Kiwoom(QAxWidget):
         # { "address": { "$regex": "^S" } }
 
         return stored_list
+
+    @SyncRequestDecorator.kiwoom_sync_request
+    def commKwRqData(self, codes,  codeCount, requestName, screenNo, inquiry=0, typeFlag=0):
+        """
+        복수종목조회 메서드(관심종목조회 메서드라고도 함).
+        이 메서드는 setInputValue() 메서드를 이용하여, 사전에 필요한 값을 지정하지 않는다.
+        단지, 메서드의 매개변수에서 직접 종목코드를 지정하여 호출하며,
+        데이터 수신은 receiveTrData() 이벤트에서 아래 명시한 항목들을 1회 수신하며,
+        이후 receiveRealData() 이벤트를 통해 실시간 데이터를 얻을 수 있다.
+        복수종목조회 TR 코드는 OPTKWFID 이며, 요청 성공시 아래 항목들의 정보를 얻을 수 있다.
+        종목코드, 종목명, 현재가, 기준가, 전일대비, 전일대비기호, 등락율, 거래량, 거래대금,
+        체결량, 체결강도, 전일거래량대비, 매도호가, 매수호가, 매도1~5차호가, 매수1~5차호가,
+        상한가, 하한가, 시가, 고가, 저가, 종가, 체결시간, 예상체결가, 예상체결량, 자본금,
+        액면가, 시가총액, 주식수, 호가시간, 일자, 우선매도잔량, 우선매수잔량,우선매도건수,
+        우선매수건수, 총매도잔량, 총매수잔량, 총매도건수, 총매수건수, 패리티, 기어링, 손익분기,
+        잔본지지, ELW행사가, 전환비율, ELW만기일, 미결제약정, 미결제전일대비, 이론가,
+        내재변동성, 델타, 감마, 쎄타, 베가, 로
+        :param codes: string - 한번에 100종목까지 조회가능하며 종목코드사이에 세미콜론(;)으로 구분.
+        :param inquiry: int - api 문서는 bool 타입이지만, int로 처리(0: 조회, 1: 남은 데이터 이어서 조회)
+        :param codeCount: int - codes에 지정한 종목의 갯수.
+        :param requestName: string
+        :param screenNo: string
+        :param typeFlag: int - 주식과 선물옵션 구분(0: 주식, 3: 선물옵션), 주의: 매개변수의 위치를 맨 뒤로 이동함.
+        :return: list - 중첩 리스트 [[종목코드, 종목명 ... 종목 정보], [종목코드, 종목명 ... 종목 정보]]
+        """
+
+        if not (isinstance(codes, str)
+                and isinstance(inquiry, int)
+                and isinstance(codeCount, int)
+                and isinstance(requestName, str)
+                and isinstance(screenNo, str)
+                and isinstance(typeFlag, int)):
+            raise ParameterTypeError()
+
+        res = self.dynamicCall("CommKwRqData(QString, QBoolean, int, int, QString, QString)",
+                                      codes, inquiry, codeCount, typeFlag, requestName, screenNo)
+        log.instance().logger().debug("CommKwRqData RES: {0}".format(res))
+        if res < 0:
+            log.instance().logger().debug("CommKwRqData RES: {0}".format(errors(res)))
+            self.event.exit()
+
+    def add_all_market_state(self):
+        print("")
+
+class ParameterTypeError(Exception):
+    """ 파라미터 타입이 일치하지 않을 경우 발생하는 예외 """
+
+    def __init__(self, msg="파라미터 타입이 일치하지 않습니다."):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg

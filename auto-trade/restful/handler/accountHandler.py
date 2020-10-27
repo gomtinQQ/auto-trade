@@ -2,7 +2,6 @@ import time
 import json
 
 from tornado.web import RequestHandler
-
 from util.logUtil import CommonLogger as log
 
 
