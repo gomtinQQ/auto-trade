@@ -115,13 +115,16 @@ if __name__ == "__main__":
     print(list)
     """
     db = MongoDbManager('localhost', 'hts')
-    list = db.dist("stock_info", "categoryC")
-    print(list)
-    sum = 0
-    for i in list:
-        c = db.count("stock_info", {"categoryC": i})
-        sum += c
-        print("{0}: {1}".format(i, c))
+    # list = db.dist("stock_info", "categoryC")
+    # print(list)
+    # sum = 0
+    # for i in list:
+    #     c = db.count("stock_info", {"categoryC": i})
+    #     sum += c
+    #     print("{0}: {1}".format(i, c))
+    #
+    # print(sum)
+    list = db.dist("stock_real", "code")
+    print(len(list))
 
-    print(sum)
 

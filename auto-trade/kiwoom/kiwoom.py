@@ -8,7 +8,7 @@ import threading
 from threading import Event, Lock
 
 from PyQt5.QAxContainer import QAxWidget
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtCore import QThread
 from PyQt5.QtCore import QEventLoop
 from PyQt5.QtWidgets import QApplication
@@ -55,6 +55,7 @@ class Kiwoom(QAxWidget):
         self.dict_callback_temp = None
         # 요청 결과
         self.event = None
+        self.multiEvents = {}
         self.result = {}
         self.dict_call_param = {}
 
@@ -62,6 +63,7 @@ class Kiwoom(QAxWidget):
         self.market_state_screen = "1000"
         self.market_state_fid = "251"
         self.market_state_open = False
+        self.market_real_table = "stock_real"
 
     # -------------------------------------
     # 로그인 관련함수
@@ -198,25 +200,51 @@ class Kiwoom(QAxWidget):
         res = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTRCode, sRQName, nIndex, sItemName)
         return res
 
-    @SyncRequestDecorator.kiwoom_sync_request
-    def check_market_state(self, screenId, codes):
-        # fid = "10;20;11;12;15;13;14;15;29;567;568;"
-        fid = "10;20;11;12;15;13;14;15;29;567;568;"
-        res = self.dynamicCall("SetRealReg(QString, QString, QString, QString)"
-                         , screenId
-                         , codes
-                         , fid, "0")
-        log.instance().logger().debug("CommKwRqData RES: {0}".format(res))
+    def set_check_market_state(self, screenId, codes, addType=1):
+        self.check_market_state(screenId, codes, addType)
+
+    def check_market_open(self):
+        fid = "215;20;214"
+        res = self.dynamicCall("SetRealReg(QString, QString, QString, QString)", "1000", "", fid, "0")
+        log.instance().logger().debug("SetRealReg RES: {0}".format(res))
         if res < 0:
-            log.instance().logger().debug("CommKwRqData RES: {0}".format(errors(res)))
+            log.instance().logger().debug("SetRealReg RES: {0}".format(errors(res)))
             self.event.exit()
 
+    def remove_real(self):
+        res = self.dynamicCall("SetRealRemove(QString, QString)", "ALL", "ALL")
+        log.instance().logger().debug("SetRealRemove RES: {0}".format(res))
+
+    def clear_market_state(self, screen=""):
+        res = self.dynamicCall("DisconnectRealData(QString)", screen)
+        res = 1
+        log.instance().logger().debug("DisconnectRealData RES: {0}".format(res))
+
+    # @SyncRequestDecorator.kiwoom_sync_request
+    def check_market_state(self, screenId, codes, addType="1"):
+        # fid = "10;20;11;12;15;13;14;15;29;567;568;"
+        fid = "10;20"
+        res = self.dynamicCall("SetRealReg(QString, QString, QString, QString)", screenId, codes, fid, addType)
+        log.instance().logger().debug("SetRealReg RES: {0} {1} {2} {3} {4}".format(res, screenId, codes, fid, addType))
+        if res < 0:
+            log.instance().logger().debug("SetRealReg RES ERROR: {0}".format(errors(res)))
+            # self.event.exit()
+        else:
+            log.instance().logger().debug("SetRealReg RES SUCCESS: {0}".format(errors(res)))
+            # self.multiEvents[screenId] = QEventLoop()
+            # self.multiEvents[screenId].exec_()
+            # self.event.exit()
+        return res
+
     def kiwoom_OnReceiveRealData(self, sCode, sRealType, sRealData):
-        log.instance().logger().debug("REAL DATA: {0}, {1}, {2}".format(sCode, sRealType, sRealData))
+        # log.instance().logger().debug("REAL DATA: {0}, {1}, {2}".format(sCode, sRealType, sRealData))
         if sRealType == "장시작시간":
             self.set_market_state(sCode)
         elif sRealType == "주식체결":
-            print(self.get_real_stock_info(sCode, sRealType))
+            # log.instance().logger().debug("주식 체결: {0}".format(self.get_real_stock_info(sCode, sRealType)))\
+            result = self.get_real_stock_info(sCode, sRealType)
+            self.db.add(self.market_real_table, result)
+            # self.event.exit()
 
     def get_real_stock_info(self, sCode, sRealType):
 
@@ -335,6 +363,8 @@ class Kiwoom(QAxWidget):
                 self.dict_callback_temp = None
                 prev.extend(response)
                 self.dict_callback[tr_name] = prev
+        elif pre_next == '':
+            log.instance().logger().debug("다음이 없음")
         else:
             if self.dict_callback_temp is None:
                 self.dict_callback_temp = response
