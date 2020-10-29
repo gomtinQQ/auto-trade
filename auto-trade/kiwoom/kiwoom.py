@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import datetime
-import sys
-import os
+# import sys
+# import os
 import time
-import threading
-from threading import Event, Lock
+# import threading
+# from threading import Event, Lock
 
 from PyQt5.QAxContainer import QAxWidget
-from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
-from PyQt5.QtCore import QThread
-from PyQt5.QtCore import QEventLoop
-from PyQt5.QtWidgets import QApplication
-
-import numpy as np
-import pandas as pd
+# from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
+# from PyQt5.QtCore import QThread
+# from PyQt5.QtCore import QEventLoop
+# from PyQt5.QtWidgets import QApplication
+#
+# import numpy as np
+# import pandas as pd
 
 from util.logUtil import CommonLogger as log
 from kiwoom.SyncRequestDecorator import SyncRequestDecorator
@@ -65,6 +65,9 @@ class Kiwoom(QAxWidget):
         self.market_state_open = False
         self.market_real_table = "stock_real"
 
+        # 장 정보
+        self.real_stocks = {}
+
     # -------------------------------------
     # 로그인 관련함수
     # -------------------------------------
@@ -93,6 +96,8 @@ class Kiwoom(QAxWidget):
         :return: accout list, in python list form.
         """
         raw = self.dynamicCall("GetLoginInfo(\"ACCLIST\")")
+        temp = self.dynamicCall("GetLoginInfo(\"USER_ID\")")
+        print("USER ID {0}".format(temp))
         result = raw.split(";")
         if result[-1] == '':
             result.pop()
@@ -141,6 +146,8 @@ class Kiwoom(QAxWidget):
         :return: accout list, in python list form.
         """
         raw = self.dynamicCall("GetLoginInfo(\"ACCLIST\")")
+        temp = self.dynamicCall("GetLoginInfo(\"USER_ID\")")
+        print("USER ID {0}".format(temp))
         result = raw.split(";")
         if result[-1] == '':
             result.pop()
@@ -200,6 +207,12 @@ class Kiwoom(QAxWidget):
         res = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTRCode, sRQName, nIndex, sItemName)
         return res
 
+    def set_real_stocks(self, codes):
+        for c in codes:
+            self.real_stocks[c] = {
+                "time": None
+            }
+
     def set_check_market_state(self, screenId, codes, addType=1):
         self.check_market_state(screenId, codes, addType)
 
@@ -242,8 +255,7 @@ class Kiwoom(QAxWidget):
             self.set_market_state(sCode)
         elif sRealType == "주식체결":
             # log.instance().logger().debug("주식 체결: {0}".format(self.get_real_stock_info(sCode, sRealType)))\
-            result = self.get_real_stock_info(sCode, sRealType)
-            self.db.add(self.market_real_table, result)
+            self.get_real_stock_info(sCode, sRealType)
             # self.event.exit()
 
     def get_real_stock_info(self, sCode, sRealType):
@@ -272,10 +284,10 @@ class Kiwoom(QAxWidget):
         # 출력 : 240124
         h = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['누적거래량'])
         h = abs(int(h))
-
-        return {
-            "date": datetime.datetime.now().strftime("%Y-%m-%d"),
-            "time": a,
+        cFmt = "%Y-%m-%d %H%M%S"
+        date = datetime.datetime.now().strftime("%Y-%m-%d")
+        result = {
+            "time": datetime.datetime("{0} {1}".format(date, a), cFmt),
             "code": sCode,
             "price": b,
             "diffPrice": c,
@@ -283,7 +295,27 @@ class Kiwoom(QAxWidget):
             "amount": g,
             "accAmount": h
         }
+        # 125717
+        fmt = '%H%M%S'
+        now = datetime.datetime.strptime(a, fmt)
+        prev = self.real_stocks[sCode]["time"]
+        # 5초에 한번씩만 저장하도록 수정
+        if prev is None:
+            self.real_stocks[sCode]["time"] = now
+            self.real_stocks[sCode]["price"] = b
+            self.db.add(self.market_real_table, result)
+            return
 
+        diff = now - prev
+
+        if diff.seconds >= 10 and self.real_stocks[sCode]["price"] == b:
+            self.real_stocks[sCode]["time"] = now
+            return
+        elif diff.seconds >= 10 and self.real_stocks[sCode]["price"] != b:
+            self.real_stocks[sCode]["time"] = now
+            self.real_stocks[sCode]["price"] = b
+            self.db.add(self.market_real_table, result)
+            return
 
     def set_market_state(self, sCode):
         value = self.kiwoom_GetRealData(sCode, self.market_state_fid)

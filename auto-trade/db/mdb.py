@@ -98,6 +98,11 @@ class MongoDbManager():
                 [("date", pymongo.DESCENDING), ("code", pymongo.ASCENDING)],
                 unique=True
             )
+        if "stock_real" not in self.db.list_collection_names():
+            self.get_table("stock_real").create_index(
+                [("time", pymongo.DESCENDING), ("code", pymongo.ASCENDING)],
+                unique=True
+            )
 
 
 if __name__ == "__main__":

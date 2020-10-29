@@ -29,6 +29,9 @@ class RealTimeHandler(RequestHandler):
                 for c in result:
                     codeList.append(c["code"])
                 log.instance().logger().debug("SET REAL RES: {0} {1}".format(page, codeList))
+
+                self.hts.set_real_stocks(codeList)
+
                 if page == 1:
                     self.hts.set_check_market_state("STOCK{0:03}".format(page), ";".join(codeList), "0")
                 else:
