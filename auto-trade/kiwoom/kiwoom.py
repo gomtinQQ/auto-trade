@@ -284,10 +284,10 @@ class Kiwoom(QAxWidget):
         # 출력 : 240124
         h = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['누적거래량'])
         h = abs(int(h))
-        cFmt = "%Y-%m-%d %H%M%S"
-        date = datetime.datetime.now().strftime("%Y-%m-%d")
+        cFmt = "%Y%m%d %H%M%S"
+        date = datetime.datetime.now().strftime("%Y%m%d")
         result = {
-            "time": datetime.datetime("{0} {1}".format(date, a), cFmt),
+            "time": datetime.datetime.strptime("{0} {1}".format(date, a), cFmt),
             "code": sCode,
             "price": b,
             "diffPrice": c,
@@ -615,12 +615,12 @@ class Kiwoom(QAxWidget):
             self.db.add('stock_daily_record', {'date': date, 'code': code})
             print(stock_list)
 
-    def get_kospi_list(self, today=None):
+    def get_kospi_list(self, today=None, market_type="0"):
         """
             KOSPI 정보만 불러옴
             나중에는 코스닥도 한번
         """
-        ret = self.dynamicCall("GetCodeListByMarket(QString)", ["0"])
+        ret = self.dynamicCall("GetCodeListByMarket(QString)", [market_type])
         temp_kospi_code_list = ret.split(';')
         kospi_code_list = []
         kospi_list = []
@@ -673,11 +673,11 @@ class Kiwoom(QAxWidget):
                 , "stock_state": self.dynamicCall("GetMasterStockState(QString)", [code])
             }
 
-            time.sleep(self.SLEEP_TIME*3)
+            time.sleep(self.SLEEP_TIME*4)
             print("종목 정보: ", item)
 
-            if '투자주의' in item["stock_state"] or '투자경고' in item["company_state"] or '투자위험' in item["company_state"] or '투자주의환기종목' in item["company_state"]:
-                continue
+            # if '투자주의' in item["stock_state"] or '투자경고' in item["company_state"] or '투자위험' in item["company_state"] or '투자주의환기종목' in item["company_state"]:
+            #     continue
 
             tr_code = self.kiwoom_tr_stock_info(code)['res']
             keys = self.dict_callback.keys()
@@ -697,8 +697,14 @@ class Kiwoom(QAxWidget):
             for key, value in detail.items():
                 item[key] = value
 
+            if market_type == "0":
+                item["market"] = "KS"
+            elif market_type == "10":
+                item["market"] = "KQ"
+
             print("종목 상세 정보: ", item)
             kospi_list.append(item)
+
             self.db.add('code', item)
 
         # self.db.add('code', kospi_list)

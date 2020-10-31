@@ -8,7 +8,7 @@ class Code_Crawler():
     def __init__(self, db):
         self.db = db
         self.table_name = "stock_info"
-        self.yf_table_name = "stock_yf_daily"
+        self.yf_table_name = "stock_yf_daily_1030"
         self.today = datetime.datetime.now().strftime("%Y-%m-%d")
         print("CC: {0}".format(self.today))
 
@@ -42,7 +42,7 @@ class Code_Crawler():
 
     def loadYahooHistory(self, code, market):
         last_date = self.db.max(self.yf_table_name, {'code': code}, 'date')
-        ticker = yf.Ticker("{0}.{1}".format(code,market))
+        ticker = yf.Ticker("{0}.{1}".format(code, market))
 
         if self.today == last_date:
             return
@@ -55,7 +55,7 @@ class Code_Crawler():
             t["date"] = t["date"].split("T")[0]
             # data_lowercase.append(t)
             t["code"] = code
-            t["market"] = market
+            # t["market"] = market
             data_lowercase.insert(0, t)
 
         # print(len(data_json["data"]))

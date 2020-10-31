@@ -15,5 +15,6 @@ class RealTimeRemoveHandler(RequestHandler):
         remove real time stock info
         :return:
         """
+        self.hts.multiEvents["STOCK"].exit()
         self.hts.remove_real()
         print("REMOVE ALL REAL")

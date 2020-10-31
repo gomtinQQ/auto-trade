@@ -10,6 +10,7 @@ from restful.handler.stockHandler import StockHandler
 from restful.handler.stockDailyHandler import StockDailyHandler
 from restful.handler.realtimeHandler import RealTimeHandler
 from restful.handler.realtimeRemoveHandler import RealTimeRemoveHandler
+from restful.handler.stockCodeHandler import StockCodeHandler
 from kiwoom.kiwoom import Kiwoom
 from db.mdb import MongoDbManager
 import time
@@ -27,7 +28,7 @@ def make_app():
         ("/stocks-daily", StockDailyHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
         ("/real", RealTimeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
         ("/real/remove", RealTimeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
-
+        ("/code", StockCodeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
     ]
     # Autoreload seems troublesome.
     return Application(urls, debug=True, autoreload=False)
@@ -58,10 +59,9 @@ if __name__ == "__main__":
     # tornado.autoreload.add_reload_hook(shutdown)
     log.instance().logger().debug('RESTful api server started at port {}'.format(port))
 
-    time.sleep(5)
     # hts.clear_market_state("")
     # hts.clear_market_state("1000")
-    hts.remove_real()
+    # hts.remove_real()
     # hts.check_market_open()
     # hts.check_market_state("code001", "008350;000400", 0)
     # hts.check_market_state("code001", "008350;000400", "0")

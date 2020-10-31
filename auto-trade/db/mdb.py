@@ -4,10 +4,13 @@ import pymongo
 class MongoDbManager():
     # id, pwd 아직 안 씀
     def __init__(self, domain, db_name, port=27017):
-        url = 'mongodb://{0}:{1}/'.format(domain, port)
+        url = 'mongodb://{0}:{1}/?compressors=snappy'.format(domain, port)
         self.client = pymongo.MongoClient(url)
         self.db = self.client[db_name]
         self.init_collection()
+
+    def add_table(self, table_name):
+        self.db.create_collection(table_name, storageEngine={'wiredTiger': {'configString': 'block_compressor=snappy'}})
 
     def get_table(self, table_name):
         return self.db[table_name]
@@ -32,8 +35,11 @@ class MongoDbManager():
         table = self.get_table(table_name)
         # if isinstance(data, (list)):
         if isinstance(data, list):
-            if len(data) > 0:
+            size = len(data)
+            if size > 0:
                 table.insert_many(data)
+                # for i in range(0, size, 100):
+                #     table.insert_many(data[i: i + 100 if i + 100 < size else size])
         elif isinstance(data, dict):
             table.insert_one(data)
 
@@ -83,6 +89,7 @@ class MongoDbManager():
 
     def init_collection(self):
         if "code" not in self.db.list_collection_names():
+            self.add_table("code")
             self.get_table('code').create_index(
                 [("date", pymongo.DESCENDING), ("code", pymongo.ASCENDING)],
                 unique=True
@@ -101,6 +108,12 @@ class MongoDbManager():
         if "stock_real" not in self.db.list_collection_names():
             self.get_table("stock_real").create_index(
                 [("time", pymongo.DESCENDING), ("code", pymongo.ASCENDING)],
+                unique=True
+            )
+        if "stock_yf_daily" not in self.db.list_collection_names():
+            # self.add_table("stock_yf_daily_1030")
+            self.get_table("stock_yf_daily").create_index(
+                [("code", pymongo.ASCENDING), ("date", pymongo.DESCENDING)],
                 unique=True
             )
 
