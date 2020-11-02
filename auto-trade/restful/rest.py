@@ -11,6 +11,7 @@ from restful.handler.stockDailyHandler import StockDailyHandler
 from restful.handler.realtimeHandler import RealTimeHandler
 from restful.handler.realtimeRemoveHandler import RealTimeRemoveHandler
 from restful.handler.stockCodeHandler import StockCodeHandler
+from restful.handler.fileStoreHandlerHandler import FileStoreHandler
 from kiwoom.kiwoom import Kiwoom
 from db.mdb import MongoDbManager
 import time
@@ -29,6 +30,7 @@ def make_app():
         ("/real", RealTimeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
         ("/real/remove", RealTimeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
         ("/code", StockCodeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
+        ("/store", FileStoreHandler, dict(db=db))
     ]
     # Autoreload seems troublesome.
     return Application(urls, debug=True, autoreload=False)

@@ -1,5 +1,5 @@
 import pymongo
-
+from datetime import datetime
 
 class MongoDbManager():
     # id, pwd 아직 안 씀
@@ -142,7 +142,10 @@ if __name__ == "__main__":
     #     print("{0}: {1}".format(i, c))
     #
     # print(sum)
-    list = db.dist("stock_real", "code")
+    start = datetime(2020, 11, 2, 0, 0, 0, 0)
+    end = datetime(2020, 11, 2, 23, 59, 59, 999)
+
+    list = db.dist("stock_real", "code", query={"time": {"$gte": start, "$lt": end}})
     print(len(list))
 
 

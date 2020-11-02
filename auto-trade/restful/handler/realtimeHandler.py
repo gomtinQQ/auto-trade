@@ -16,28 +16,23 @@ class RealTimeHandler(RequestHandler):
         get real time stock info
         :return:
         """
-        table_name = "stock_info"
-        count = self.db.count(table_name, {})
+        table_name = "code"
+        list = self.db.dist(table_name, "code")
         size = 100
         page = 1
+        count = len(list)
         # self.hts.get_daily_stock_open_status()
         # time.sleep(2)
-        for i in range(1, count, size):
-            result = self.db.page(table_name, page, size, {})
-            if result is not None:
-                codeList = []
-                for c in result:
-                    codeList.append(c["code"])
-                log.instance().logger().debug("SET REAL RES: {0} {1}".format(page, codeList))
-
-                self.hts.set_real_stocks(codeList)
-
-                if page == 1:
-                    self.hts.set_check_market_state("STOCK{0:03}".format(page), ";".join(codeList), "0")
-                else:
-                    self.hts.set_check_market_state("STOCK{0:03}".format(page), ";".join(codeList), "1")
-                    # print("")
-                time.sleep(2)
+        for i in range(0, count, size):
+            code_list = list[i:  i + size if size + i <= count else count]
+            log.instance().logger().debug("SET REAL RES: {0} {1}".format(page, code_list))
+            self.hts.set_real_stocks(code_list)
+            if page == 1:
+                self.hts.set_check_market_state("STOCK{0:03}".format(page), ";".join(code_list), "0")
+            else:
+                self.hts.set_check_market_state("STOCK{0:03}".format(page), ";".join(code_list), "1")
+                # print("")
+            time.sleep(2)
             page += 1
         self.hts.multiEvents["STOCK"] = QEventLoop()
         self.hts.multiEvents["STOCK"].exec_()
