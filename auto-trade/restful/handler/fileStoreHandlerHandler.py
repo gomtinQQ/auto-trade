@@ -18,7 +18,9 @@ class FileStoreHandler(RequestHandler):
             aws_secret_access_key=secret_key
         )
 
-        codes = self.db.find("code", {})
+        last_date = self.db.max("code", {}, "date")
+
+        codes = self.db.find("code", {"date": last_date})
         size = len(codes)
         index = 1
         for c in codes:
@@ -32,5 +34,17 @@ class FileStoreHandler(RequestHandler):
                 object = s3.Object('antwits', 'stock/{0}/{1}.json'.format(c["date"], c["code"]))
 
                 object.put(Body=list_b)
+
+            list = self.db.find("stock_yf_daily", {"code": c["code"], "date": {"$gte": "20160101"}})
+            if len(list) > 0:
+                print("TOTAL: {0} / {1}: {2} 5years".format(index, size, c["code"]))
+
+                list_json = json.dumps(list)
+                list_b = bytes(list_json, 'utf-8')
+                s3.Object('antwits', 'stock/{0}/5/{1}.json'.format(c["date"], c["code"])).delete()
+                object = s3.Object('antwits', 'stock/{0}/5/{1}.json'.format(c["date"], c["code"]))
+
+                object.put(Body=list_b)
+
             index += 1
 

@@ -142,8 +142,8 @@ if __name__ == "__main__":
     #     print("{0}: {1}".format(i, c))
     #
     # print(sum)
-    start = datetime(2020, 11, 2, 0, 0, 0, 0)
-    end = datetime(2020, 11, 2, 23, 59, 59, 999)
+    start = datetime(2020, 11, 3, 0, 0, 0, 0)
+    end = datetime(2020, 11, 3, 23, 59, 59, 999)
 
     list = db.dist("stock_real", "code", query={"time": {"$gte": start, "$lt": end}})
     print(len(list))
