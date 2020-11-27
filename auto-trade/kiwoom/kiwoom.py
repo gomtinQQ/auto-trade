@@ -278,21 +278,21 @@ class Kiwoom(QAxWidget):
         d = float(d)
 
         # 출력 : +240124  매수일때, -2034 매도일 때
-        g = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['거래량'])
-        g = abs(int(g))
+        #g = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['거래량'])
+        #g = abs(int(g))
 
         # 출력 : 240124
         h = self.dynamicCall(cmd, sCode, self.realType.REALTYPE[sRealType]['누적거래량'])
         h = abs(int(h))
         cFmt = "%Y%m%d %H%M%S"
         date = datetime.datetime.now().strftime("%Y%m%d")
+        # "amount": g,
         result = {
             "time": datetime.datetime.strptime("{0} {1}".format(date, a), cFmt),
             "code": sCode,
             "price": b,
             "diffPrice": c,
             "rate": d,
-            "amount": g,
             "accAmount": h
         }
         # 125717
@@ -673,7 +673,7 @@ class Kiwoom(QAxWidget):
                 , "stock_state": self.dynamicCall("GetMasterStockState(QString)", [code])
             }
 
-            time.sleep(self.SLEEP_TIME*4)
+            time.sleep(self.SLEEP_TIME*8)
             print("종목 정보: ", item)
 
             # if '투자주의' in item["stock_state"] or '투자경고' in item["company_state"] or '투자위험' in item["company_state"] or '투자주의환기종목' in item["company_state"]:

@@ -7,7 +7,7 @@ from db.mdb import MongoDbManager
 class Code_Crawler():
     def __init__(self, db):
         self.db = db
-        self.table_name = "stock_info"
+        self.table_name = "stock_category"
         self.yf_table_name = "stock_yf_daily_1030"
         self.today = datetime.datetime.now().strftime("%Y-%m-%d")
         print("CC: {0}".format(self.today))
@@ -19,26 +19,28 @@ class Code_Crawler():
         data = pd.read_csv("kospi.csv")
         data_json = json.loads(data.to_json(orient="records"))
         for i in data_json:
-            i["code"] = "{0:06d}".format(i["code"])
+            # i["code"] = "{0:06d}".format(i["code"])
+            i["code"] = i["code"].rjust(6, '0')
             i["market"] = "KS"
         print(data_json[0])
         db.add(self.table_name, data_json)
         for i in data_json:
             print(i)
-            self.loadYahooHistory(i["code"], i["market"])
+            # self.loadYahooHistory(i["code"], i["market"])
 
     def loadKosdaq(self):
         data = pd.read_csv("kosdaq.csv")
         data_json = json.loads(data.to_json(orient="records"))
         for i in data_json:
-            i["code"] = "{0:06d}".format(i["code"])
+            # i["code"] = "{0:06d}".format(int(i["code"]))
+            i["code"] = i["code"].rjust(6, '0')
             i["market"] = "KQ"
 
         print(data_json[0])
         db.add(self.table_name, data_json)
         for i in data_json:
             print(i)
-            self.loadYahooHistory(i["code"], i["market"])
+            # self.loadYahooHistory(i["code"], i["market"])
 
     def loadYahooHistory(self, code, market):
         last_date = self.db.max(self.yf_table_name, {'code': code}, 'date')
@@ -69,7 +71,7 @@ class Code_Crawler():
 
 
 if __name__ == "__main__":
-    db = MongoDbManager('localhost', 'hts')
+    db = MongoDbManager('localhost', 'antwits')
     c = Code_Crawler(db)
     c.clear()
     c.loadKospi()
