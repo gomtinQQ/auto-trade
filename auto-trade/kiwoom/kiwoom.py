@@ -620,6 +620,7 @@ class Kiwoom(QAxWidget):
             KOSPI 정보만 불러옴
             나중에는 코스닥도 한번
         """
+        table_name = 'stock'
         ret = self.dynamicCall("GetCodeListByMarket(QString)", [market_type])
         temp_kospi_code_list = ret.split(';')
         kospi_code_list = []
@@ -636,7 +637,7 @@ class Kiwoom(QAxWidget):
         print(temp_kospi_code_list)
         print(kospi_code_list)
         # return kospi_code_list
-        pre = self.db.find('code', {'date': today})
+        pre = self.db.find(table_name, {'date': today})
         # pre = self.db.find('code', {'date': '20200529'})
         print(len(pre))
         pre_code_list = []
@@ -705,11 +706,11 @@ class Kiwoom(QAxWidget):
             print("종목 상세 정보: ", item)
             kospi_list.append(item)
 
-            self.db.add('code', item)
+            self.db.add(table_name, item)
 
         # self.db.add('code', kospi_list)
 
-        stored_list = self.db.find('code', {'date': today})
+        stored_list = self.db.find(table_name, {'date': today})
         # pre = self.db.find('code', {'date': '20200529'})
         # { "address": { "$regex": "^S" } }
 

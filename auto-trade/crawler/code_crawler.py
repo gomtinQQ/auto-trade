@@ -3,7 +3,7 @@ import json
 import yfinance as yf
 import datetime
 from db.mdb import MongoDbManager
-
+# https://seibro.or.kr/websquare/control.jsp?w2xPath=/IPORTAL/user/stock/BIP_CNTS02004V.xml&menuNo=41
 class Code_Crawler():
     def __init__(self, db):
         self.db = db
