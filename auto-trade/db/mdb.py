@@ -107,7 +107,7 @@ class MongoDbManager():
             )
         if "stock_real" not in self.db.list_collection_names():
             self.get_table("stock_real").create_index(
-                [("time", pymongo.DESCENDING), ("code", pymongo.ASCENDING)],
+                [("code", pymongo.ASCENDING), ("time", pymongo.DESCENDING)],
                 unique=True
             )
         if "stock_yf_daily" not in self.db.list_collection_names():

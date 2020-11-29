@@ -17,7 +17,7 @@ from db.mdb import MongoDbManager
 import time
 
 app = QApplication(sys.argv)
-db = MongoDbManager('localhost', 'hts')
+db = MongoDbManager('localhost', 'antwits')
 hts = Kiwoom(db)
 
 SLEEP_TIME = 0.1
