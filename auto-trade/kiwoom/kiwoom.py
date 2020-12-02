@@ -674,7 +674,7 @@ class Kiwoom(QAxWidget):
                 , "stock_state": self.dynamicCall("GetMasterStockState(QString)", [code])
             }
 
-            time.sleep(self.SLEEP_TIME*8)
+            time.sleep(self.SLEEP_TIME*10)
             print("종목 정보: ", item)
 
             # if '투자주의' in item["stock_state"] or '투자경고' in item["company_state"] or '투자위험' in item["company_state"] or '투자주의환기종목' in item["company_state"]:

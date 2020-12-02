@@ -19,9 +19,9 @@ class FileStoreHandler(RequestHandler):
             aws_secret_access_key=secret_key
         )
 
-        last_date = self.db.max("code", {}, "date")
+        last_date = self.db.max("stock", {}, "date")
 
-        codes = self.db.find("code", {"date": last_date})
+        codes = self.db.find("stock", {"date": last_date})
         size = len(codes)
         index = 1
         for c in codes:

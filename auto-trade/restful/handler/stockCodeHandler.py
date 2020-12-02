@@ -71,7 +71,7 @@ class StockCodeHandler(RequestHandler):
             f_date = None
         else:
             f_date = "{0}-{1}-{2}".format(last_date[0:4], last_date[4:6], last_date[6:8])
-
+        print("{0}-{1}".format(code, market))
         hist = ticker.history(period="max") if f_date is None else ticker.history(start=f_date)
         data_json = json.loads(hist.to_json(orient="table"))
         data_lowercase = []

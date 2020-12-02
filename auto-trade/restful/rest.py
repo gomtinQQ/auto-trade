@@ -28,7 +28,7 @@ def make_app():
         ("/stocks", StockHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
         ("/stocks-daily", StockDailyHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts)),
         ("/real", RealTimeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
-        ("/real/remove", RealTimeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
+        ("/remove", RealTimeRemoveHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
         ("/code", StockCodeHandler, dict(SLEEP_TIME=SLEEP_TIME, hts=hts, db=db)),
         ("/store", FileStoreHandler, dict(db=db))
     ]
