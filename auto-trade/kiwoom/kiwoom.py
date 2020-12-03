@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 import datetime
 # import sys
-# import os
+import os
 import time
+import boto3
+import json
 # import threading
 # from threading import Event, Lock
 
@@ -67,6 +69,16 @@ class Kiwoom(QAxWidget):
 
         # 장 정보
         self.real_stocks = {}
+
+        secret_key = os.environ.get("AWS_SECRET_KEY")
+        access_key = os.environ.get("AWS_ACCESS_KEY")
+
+        self.s3 = boto3.resource(
+            's3',
+            region_name='ap-northeast-2',
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key
+        )
 
     # -------------------------------------
     # 로그인 관련함수
@@ -312,9 +324,12 @@ class Kiwoom(QAxWidget):
             self.real_stocks[sCode]["time"] = now
             return
         elif diff.seconds >= 10 and self.real_stocks[sCode]["price"] != b:
+            self.real_stocks[sCode]["prev"] = self.real_stocks[sCode]["time"]
             self.real_stocks[sCode]["time"] = now
             self.real_stocks[sCode]["price"] = b
+
             self.db.add(self.market_real_table, result)
+            self.store_daily_real_stock(sCode)
             return
 
     def set_market_state(self, sCode):
@@ -758,6 +773,26 @@ class Kiwoom(QAxWidget):
 
     def add_all_market_state(self):
         print("")
+
+    def store_daily_real_stock(self, code, dummy_start=None, dummy_end=None):
+        print("store {0}".format(code))
+        last_date = datetime.datetime.now().strftime("%Y%m%d")
+        start = datetime.datetime.strptime(last_date + " 08:30:00", "%Y%m%d %H:%M:%S")
+        end = datetime.datetime.strptime(last_date + " 16:00:00", "%Y%m%d %H:%M:%S")
+        real_list = self.db.find(self.market_real_table, {'code': code, 'time': {'$gte': start, '$lte': end}})
+        p = dummy_start
+        n = dummy_end
+        if p is None or n is None:
+            p = self.real_stocks[code]["prev"].strftime("%Y%m%d %H")
+            n = self.real_stocks[code]["time"].strftime("%Y%m%d %H")
+        if p != n:
+            for i in real_list:
+                i["time"] = i["time"].strftime("%Y%m%d %H:%M:%S")
+            list_json = json.dumps(real_list)
+            list_b = bytes(list_json, 'utf-8')
+            s3_object = self.s3.Object('antwits', 'stock/{0}/daily/{1}_{2}.json'.format(last_date, code, p.split()[1]))
+            s3_object.put(Body=list_b)
+
 
 class ParameterTypeError(Exception):
     """ 파라미터 타입이 일치하지 않을 경우 발생하는 예외 """

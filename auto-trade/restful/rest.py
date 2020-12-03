@@ -74,4 +74,6 @@ if __name__ == "__main__":
     #    shutdown()
     # Nothing to do for shutdown so... commenting out.
 
+    # hts.store_daily_real_stock("000020", "20201203 09", "20201203 10")
     IOLoop.instance().start()
+
