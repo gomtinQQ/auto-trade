@@ -19,9 +19,26 @@ class FileStoreHandler(RequestHandler):
             aws_secret_access_key=secret_key
         )
 
+        category_list = self.db.find("stock_category", {})
+
         last_date = self.db.max("stock", {}, "date")
 
         codes = self.db.find("stock", {"date": last_date})
+
+        for c in codes:
+            for li in category_list:
+                if li["code"] == c["code"]:
+                    c["categoryA"] = li["categoryA"]
+                    c["categoryB"] = li["categoryB"]
+                    c["categoryC"] = li["categoryC"]
+                    break
+
+        list_json = json.dumps(codes)
+        list_b = bytes(list_json, 'utf-8')
+        s3.Object('antwits', 'stock/{0}/code.json'.format(last_date)).delete()
+        obj = s3.Object('antwits', 'stock/{0}/code.json'.format(last_date))
+        obj.put(Body=list_b)
+
         size = len(codes)
         index = 1
         for c in codes:
@@ -44,9 +61,8 @@ class FileStoreHandler(RequestHandler):
                 list_json = json.dumps(list)
                 list_b = bytes(list_json, 'utf-8')
                 s3.Object('antwits', 'stock/{0}/5/{1}.json'.format(c["date"], c["code"])).delete()
-                object = s3.Object('antwits', 'stock/{0}/5/{1}.json'.format(c["date"], c["code"]))
-
-                object.put(Body=list_b)
+                obj = s3.Object('antwits', 'stock/{0}/5/{1}.json'.format(c["date"], c["code"]))
+                obj.put(Body=list_b)
 
             y_1 = datetime.datetime.now() - datetime.timedelta(days=1 * 365)
             y_1 = y_1.strftime("%Y%m%d")
@@ -57,10 +73,7 @@ class FileStoreHandler(RequestHandler):
                 list_json = json.dumps(list)
                 list_b = bytes(list_json, 'utf-8')
                 s3.Object('antwits', 'stock/{0}/1/{1}.json'.format(c["date"], c["code"])).delete()
-                object = s3.Object('antwits', 'stock/{0}/1/{1}.json'.format(c["date"], c["code"]))
-
-                object.put(Body=list_b)
-
-
+                obj = s3.Object('antwits', 'stock/{0}/1/{1}.json'.format(c["date"], c["code"]))
+                obj.put(Body=list_b)
             index += 1
 

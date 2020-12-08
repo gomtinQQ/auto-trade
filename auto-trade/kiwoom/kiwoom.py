@@ -689,7 +689,7 @@ class Kiwoom(QAxWidget):
                 , "stock_state": self.dynamicCall("GetMasterStockState(QString)", [code])
             }
 
-            time.sleep(self.SLEEP_TIME*10)
+            time.sleep(self.SLEEP_TIME*14)
             print("종목 정보: ", item)
 
             # if '투자주의' in item["stock_state"] or '투자경고' in item["company_state"] or '투자위험' in item["company_state"] or '투자주의환기종목' in item["company_state"]:
@@ -775,7 +775,7 @@ class Kiwoom(QAxWidget):
         print("")
 
     def store_daily_real_stock(self, code, dummy_start=None, dummy_end=None):
-        print("store {0}".format(code))
+        # print("store {0}".format(code))
         last_date = datetime.datetime.now().strftime("%Y%m%d")
         start = datetime.datetime.strptime(last_date + " 08:30:00", "%Y%m%d %H:%M:%S")
         end = datetime.datetime.strptime(last_date + " 16:00:00", "%Y%m%d %H:%M:%S")
@@ -785,7 +785,11 @@ class Kiwoom(QAxWidget):
         if p is None or n is None:
             p = self.real_stocks[code]["prev"].strftime("%Y%m%d %H")
             n = self.real_stocks[code]["time"].strftime("%Y%m%d %H")
+
+        # print("pre store {0} - {1} : {2}".format(code, p, n))
+
         if p != n:
+            print("store {0} - {1}".format(code, p))
             for i in real_list:
                 i["time"] = i["time"].strftime("%Y%m%d %H:%M:%S")
             list_json = json.dumps(real_list)
