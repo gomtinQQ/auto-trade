@@ -34,15 +34,15 @@ class StockCodeHandler(RequestHandler):
             9 : 하이얼펀드
             30 : K-OTC
         """
-        # KOSPI
-        ks = self.reload_kospi("0")
         self.time = datetime.now().strftime("%H")
         if self.time < "09":
             d = datetime.now().date()
-            self.today = "{0}{1:02}{2:02}".format(datetime.now().year, datetime.now().month, datetime.now().day -1)
-        else :
+            self.today = "{0}{1:02}{2:02}".format(datetime.now().year, datetime.now().month, datetime.now().day - 1)
+        else:
             self.today = datetime.now().strftime("%Y%m%d")
 
+        # KOSPI
+        ks = self.reload_kospi("0", self.today)
 
         index = 1
         size = len(ks)
@@ -52,7 +52,7 @@ class StockCodeHandler(RequestHandler):
             self.loadYahooHistory(i["code"], i["market"])
 
         # KOSDAQ
-        kq = self.reload_kospi("10")
+        kq = self.reload_kospi("10", self.today)
         index = 1
         size = len(kq)
         for i, index in kq:
@@ -65,10 +65,10 @@ class StockCodeHandler(RequestHandler):
             "kq": kq
         }
 
-    def reload_kospi(self, code):
+    def reload_kospi(self, code, today):
         hts = self.hts
         hts.deposit = None
-        return hts.get_kospi_list(market_type=code)
+        return hts.get_kospi_list(market_type=code, today=today)
         # hts.load_daily_stock_info_by_kospi()
 
     def loadYahooHistory(self, code, market):
