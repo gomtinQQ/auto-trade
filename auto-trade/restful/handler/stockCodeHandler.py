@@ -84,9 +84,7 @@ class StockCodeHandler(RequestHandler):
             f_date = "{0}-{1}-{2}".format(last_date[0:4], last_date[4:6], last_date[6:8])
         print("{1}-{0}: {2} ? {3}".format(code, market, f_date, last_date))
         hist = ticker.history(period="max") if f_date is None else ticker.history(start=f_date)
-        print("1")
         data_json = json.loads(hist.to_json(orient="table"))
-        print("2")
         data_lowercase = []
         for d in data_json["data"]:
             if f_date != d["Date"].split("T")[0]:
@@ -96,13 +94,11 @@ class StockCodeHandler(RequestHandler):
                 t["code"] = code
                 # t["market"] = market
                 data_lowercase.insert(0, t)
-        print("3")
         # print(len(data_json["data"]))
         # print(len(data_lowercase))
         # print(data_lowercase[0])
         if len(data_lowercase) > 0:
             self.db.add(self.yf_table_name, data_lowercase)
-        print("4")
         time.sleep(self.SLEEP_TIME)
     def lower_dict(self, d):
         new_dict = dict((k.lower(), v) for k, v in d.items())

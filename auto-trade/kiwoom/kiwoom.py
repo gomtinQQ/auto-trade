@@ -67,8 +67,11 @@ class Kiwoom(QAxWidget):
         self.market_state_open = False
         self.market_real_table = "stock_real"
 
-        # 장 정보
+        # 실시간 장 정보
         self.real_stocks = {}
+
+        # 5분 단위 체크 포인트 정보
+        self.check_point = {"saving": False, "last": None, "term": 5}
 
         secret_key = os.environ.get("AWS_SECRET_KEY")
         access_key = os.environ.get("AWS_ACCESS_KEY")
@@ -316,6 +319,8 @@ class Kiwoom(QAxWidget):
             self.real_stocks[sCode]["time"] = now
             self.real_stocks[sCode]["price"] = b
             self.db.add(self.market_real_table, result)
+            result = result["time"].strftime("%Y%m%d %H:%M:%S")
+            self.real_stocks[sCode]["info"] = result
             return
 
         diff = now - prev
@@ -327,23 +332,48 @@ class Kiwoom(QAxWidget):
             self.real_stocks[sCode]["prev"] = self.real_stocks[sCode]["time"]
             self.real_stocks[sCode]["time"] = now
             self.real_stocks[sCode]["price"] = b
-
             self.db.add(self.market_real_table, result)
             self.store_daily_real_stock(sCode)
+            result["time"] = result["time"].strftime("%Y%m%d %H:%M:%S")
+            self.real_stocks[sCode]["info"] = result
+            self.save_check_point()
             return
+
+    def save_check_point(self):
+        now = datetime.datetime.now()
+        if now.minute % self.check_point["term"] == 0 and self.check_point["saving"] == False:
+            if self.check_point["last"] is None or self.check_point["last"] != now.minute:
+                print("store check point START {0}".format(now))
+                self.check_point["saving"] = True
+                self.check_point["last"] = now.minute
+                ticker_list = []
+
+                for item in self.real_stocks.values():
+                    if item["time"] is not None:
+                        ticker_list.append(item["info"])
+
+                last_date = now.strftime("%Y%m%d")
+                check_point_time = now.strftime("%H:%M")
+                list_json = json.dumps(ticker_list)
+                list_b = bytes(list_json, 'utf-8')
+                s3_object = self.s3.Object('antwits', 'stock/{0}/checkpoint/{1}.json'.format(last_date, check_point_time))
+                s3_object.put(Body=list_b)
+                print("store check point END {0}".format(datetime.datetime.now()))
+                self.check_point["saving"] = False
+        return
 
     def set_market_state(self, sCode):
         value = self.kiwoom_GetRealData(sCode, self.market_state_fid)
-        if(value == '0'):
+        if value == '0':
             # 장시작전
             self.market_state_open = False
-        elif(value == '3'):
+        elif value == '3':
             # 장 시작
             self.market_state_open = True
-        elif (value == '3'):
+        elif value == '3':
             # 장 종료 동시호가
             self.market_state_open = False
-        elif (value == '3'):
+        elif value == '3':
             # 장 종료
             self.market_state_open = False
         return value
