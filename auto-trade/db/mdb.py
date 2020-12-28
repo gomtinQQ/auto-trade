@@ -1,6 +1,7 @@
 import pymongo
 from datetime import datetime
 
+
 class MongoDbManager():
     # id, pwd 아직 안 씀
     def __init__(self, domain, db_name, port=27017):
@@ -58,7 +59,7 @@ class MongoDbManager():
         # print(results_count)
         value = None
         if results_count == 0:
-            value =None
+            value = None
         else:
             for x in result:
                 value = x[field]
@@ -75,7 +76,8 @@ class MongoDbManager():
 
     def page(self, table_name, page, size, query={}, sort=None):
         table = self.get_table(table_name)
-        find_result = table.find(query).skip((page - 1) * size).limit(size) if sort is None else table.find(query).sort(sort).skip((page - 1) * size).limit(size)
+        find_result = table.find(query).skip((page - 1) * size).limit(size) if sort is None else table.find(query).sort(
+            sort).skip((page - 1) * size).limit(size)
         if find_result:
             find_result = list(find_result)
         for x in find_result:
@@ -116,6 +118,17 @@ class MongoDbManager():
                 [("code", pymongo.ASCENDING), ("date", pymongo.DESCENDING)],
                 unique=True
             )
+        if "check_point" not in self.db.list_collection_names():
+            self.get_table("check_point").create_index(
+                [("code", pymongo.ASCENDING)],
+                unique=True
+            )
+
+        if "check_point_time" not in self.db.list_collection_names():
+            self.get_table("check_point_time").create_index(
+                [("time", pymongo.DESCENDING)],
+                unique=True
+            )
 
 
 if __name__ == "__main__":
@@ -147,5 +160,3 @@ if __name__ == "__main__":
 
     list = db.dist("stock_real", "code", query={"time": {"$gte": start, "$lt": end}})
     print(len(list))
-
-

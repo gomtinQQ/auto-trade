@@ -310,38 +310,65 @@ class Kiwoom(QAxWidget):
             "rate": d,
             "accAmount": h
         }
+        # 실시간 최신 가격 정보 저장
+        check_point = {
+            "time": "{0} {1}".format(date, a),
+            "code": sCode,
+            "price": b,
+            "diffPrice": c,
+            "rate": d,
+            "accAmount": h
+        }
         # 125717
         fmt = '%H%M%S'
         now = datetime.datetime.strptime(a, fmt)
         prev = self.real_stocks[sCode]["time"]
-        # 5초에 한번씩만 저장하도록 수정
+        # 시간대별 정보 저장
+        self.find_n_update_check_point(sCode, {
+            "time": datetime.datetime.strptime("{0} {1}".format(date, a), cFmt),
+            "code": sCode,
+            "price": b,
+            "diffPrice": c,
+            "rate": d,
+            "accAmount": h
+        })
+        # 10초에 한번씩만 저장하도록 수정
         if prev is None:
             self.real_stocks[sCode]["time"] = now
             self.real_stocks[sCode]["price"] = b
             self.db.add(self.market_real_table, result)
-            result = result["time"].strftime("%Y%m%d %H:%M:%S")
-            self.real_stocks[sCode]["info"] = result
+            # self.find_n_update_check_point(sCode, result)
+            self.real_stocks[sCode]["info"] = check_point
             return
 
         diff = now - prev
 
         if diff.seconds >= 10 and self.real_stocks[sCode]["price"] == b:
             self.real_stocks[sCode]["time"] = now
+            # self.real_stocks[sCode]["info"] = check_point
             return
         elif diff.seconds >= 10 and self.real_stocks[sCode]["price"] != b:
             self.real_stocks[sCode]["prev"] = self.real_stocks[sCode]["time"]
             self.real_stocks[sCode]["time"] = now
             self.real_stocks[sCode]["price"] = b
             self.db.add(self.market_real_table, result)
+            # self.find_n_update_check_point(sCode, result)
             self.store_daily_real_stock(sCode)
-            result["time"] = result["time"].strftime("%Y%m%d %H:%M:%S")
-            self.real_stocks[sCode]["info"] = result
+            self.real_stocks[sCode]["info"] = check_point
             self.save_check_point()
             return
 
+    def find_n_update_check_point(self, code, data):
+        prev = self.db.find("check_point", {"code": code})
+        if len(prev) == 0:
+            self.db.add("check_point", data)
+        else:
+            self.db.edit("check_point", {"code": code}, data)
+        return
+
     def save_check_point(self):
         now = datetime.datetime.now()
-        if now.minute % self.check_point["term"] == 0 and self.check_point["saving"] == False:
+        if now.minute % self.check_point["term"] == 0 and not self.check_point["saving"]:
             if self.check_point["last"] is None or self.check_point["last"] != now.minute:
                 print("store check point START {0}".format(now))
                 self.check_point["saving"] = True
@@ -353,12 +380,14 @@ class Kiwoom(QAxWidget):
                         ticker_list.append(item["info"])
 
                 last_date = now.strftime("%Y%m%d")
-                check_point_time = now.strftime("%H:%M")
+                check_point_time = now.strftime("%H%M")
                 list_json = json.dumps(ticker_list)
                 list_b = bytes(list_json, 'utf-8')
-                s3_object = self.s3.Object('antwits', 'stock/{0}/checkpoint/{1}.json'.format(last_date, check_point_time))
+                s3_object = self.s3.Object('antwits',
+                                           'stock/{0}/checkpoint/{1}.json'.format(last_date, check_point_time))
                 s3_object.put(Body=list_b)
                 print("store check point END {0}".format(datetime.datetime.now()))
+                self.db.add("check_point_time", {"time": "{0} {1}".format(last_date, check_point_time)})
                 self.check_point["saving"] = False
         return
 
