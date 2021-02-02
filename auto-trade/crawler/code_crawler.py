@@ -20,7 +20,8 @@ class Code_Crawler():
         data_json = json.loads(data.to_json(orient="records"))
         for i in data_json:
             # i["code"] = "{0:06d}".format(i["code"])
-            i["code"] = i["code"].rjust(6, '0')
+            t_code = "{0}".format(i["code"])
+            i["code"] = t_code.rjust(6, '0')
             i["market"] = "KS"
         print(data_json[0])
         db.add(self.table_name, data_json)
@@ -33,7 +34,8 @@ class Code_Crawler():
         data_json = json.loads(data.to_json(orient="records"))
         for i in data_json:
             # i["code"] = "{0:06d}".format(int(i["code"]))
-            i["code"] = i["code"].rjust(6, '0')
+            t_code = "{0}".format(i["code"])
+            i["code"] = t_code.rjust(6, '0')
             i["market"] = "KQ"
 
         print(data_json[0])
