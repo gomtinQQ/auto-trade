@@ -195,3 +195,5 @@ class StockCodeHandler(RequestHandler):
                 obj = s3.Object('antwits', 'stock/{0}/1/{1}.json'.format(c["date"], c["code"]))
                 obj.put(Body=list_b)
             index += 1
+
+        self.db.add("daily_check_point_time", {"date": last_date})

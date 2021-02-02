@@ -76,4 +76,4 @@ if __name__ == "__main__":
     # c.clear()
     # c.loadKospi()
     # c.loadKosdaq()
-    c.loadYahooHistory("040160", "KQ")
+    # c.loadYahooHistory("040160", "KQ")

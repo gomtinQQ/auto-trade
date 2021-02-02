@@ -130,6 +130,11 @@ class MongoDbManager():
                 unique=True
             )
 
+        if "daily_check_point_time" not in self.db.list_collection_names():
+            self.get_table("daily_check_point_time").create_index(
+                [("date", pymongo.DESCENDING)],
+                unique=True
+            )
 
 if __name__ == "__main__":
     """
