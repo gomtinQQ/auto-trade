@@ -75,7 +75,7 @@ class Code_Crawler():
 if __name__ == "__main__":
     db = MongoDbManager('localhost', 'antwits')
     c = Code_Crawler(db)
-    # c.clear()
-    # c.loadKospi()
-    # c.loadKosdaq()
+    c.clear()
+    c.loadKospi()
+    c.loadKosdaq()
     # c.loadYahooHistory("040160", "KQ")

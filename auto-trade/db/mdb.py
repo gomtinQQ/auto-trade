@@ -4,7 +4,7 @@ from datetime import datetime
 
 class MongoDbManager():
     # id, pwd 아직 안 씀
-    def __init__(self, domain, db_name, port=27017):
+    def __init__(self, domain, db_name, port=47017):
         url = 'mongodb://{0}:{1}/?compressors=snappy'.format(domain, port)
         self.client = pymongo.MongoClient(url)
         self.db = self.client[db_name]
